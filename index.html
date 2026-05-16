@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FinPulse — ตรวจสุขภาพการเงินด้วยคณิตศาสตร์</title>
+<title>FinPulse — ตรวจสุขภาพการเงินด้วยคณิตศาสตร์ + AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 <style>
 :root {
   --ink: #0a0e0a;
@@ -27,7 +28,7 @@ body {
   font-family: 'IBM Plex Sans Thai', sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
-  background-image: 
+  background-image:
     radial-gradient(circle at 10% 20%, rgba(45,74,43,0.04) 0%, transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(193,80,46,0.04) 0%, transparent 40%);
 }
@@ -57,7 +58,7 @@ body::before {
   align-items: flex-end;
   padding-bottom: 24px;
   border-bottom: 1.5px solid var(--ink);
-  margin-bottom: 40px;
+  margin-bottom: 28px;
 }
 
 .logo {
@@ -87,6 +88,7 @@ body::before {
 .tabs {
   display: flex;
   gap: 4px;
+  flex-wrap: wrap;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.15em;
@@ -94,7 +96,7 @@ body::before {
 }
 
 .tab {
-  padding: 10px 18px;
+  padding: 10px 16px;
   background: transparent;
   border: 1.5px solid var(--ink);
   cursor: pointer;
@@ -116,6 +118,108 @@ body::before {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== GAMIFICATION STRIP ========== */
+.gami-strip {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 24px;
+  align-items: center;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 14px 22px;
+  margin-bottom: 28px;
+  border: 1.5px solid var(--ink);
+}
+
+.streak {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.streak-num {
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--amber);
+  letter-spacing: -0.02em;
+}
+
+.gami-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gami-progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  display: flex;
+  justify-content: space-between;
+}
+.gami-progress-bar {
+  height: 8px;
+  background: rgba(244,241,232,0.12);
+  position: relative;
+  overflow: hidden;
+}
+.gami-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), var(--rust));
+  transition: width 0.5s ease;
+}
+
+.badges-row {
+  display: flex;
+  gap: 6px;
+}
+.badge-chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1.5px solid var(--paper);
+  background: transparent;
+  color: var(--paper);
+  opacity: 0.35;
+  position: relative;
+  cursor: help;
+  transition: all 0.3s;
+}
+.badge-chip.earned {
+  background: var(--amber);
+  color: var(--ink);
+  opacity: 1;
+  border-color: var(--amber);
+  transform: scale(1.05);
+}
+.badge-chip:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 8px;
+  white-space: nowrap;
+  border: 1px solid var(--ink);
+  z-index: 10;
 }
 
 /* LAYOUT */
@@ -169,11 +273,10 @@ body::before {
   font-weight: 400;
 }
 
-.input-wrap {
-  position: relative;
-}
+.input-wrap { position: relative; }
 
-.input-wrap input {
+.input-wrap input,
+.input-wrap select {
   width: 100%;
   padding: 10px 50px 10px 12px;
   font-family: 'JetBrains Mono', monospace;
@@ -184,7 +287,8 @@ body::before {
   font-weight: 500;
 }
 
-.input-wrap input:focus {
+.input-wrap input:focus,
+.input-wrap select:focus {
   outline: none;
   background: #fff;
   box-shadow: 3px 3px 0 var(--ink);
@@ -281,9 +385,7 @@ body::before {
 
 .radar-svg { width: 100%; height: 100%; }
 
-.radar-data { 
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
+.radar-data { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
 
 .radar-label {
   position: absolute;
@@ -395,14 +497,6 @@ body::before {
   transition: width 0.6s ease, background 0.4s ease;
 }
 
-.metric-bar-target {
-  position: absolute;
-  top: -3px;
-  width: 2px;
-  height: 12px;
-  background: var(--ink);
-}
-
 .metric-target {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
@@ -472,33 +566,43 @@ body::before {
   font-weight: 600;
 }
 
-/* MATH PAGE */
-.math-intro {
+.forecast-chip {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 6px 12px;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ====== GENERIC PANEL/BLOCK (used by Goals/Charts/Scanner) ====== */
+.math-intro,
+.math-block,
+.sim-section {
   background: var(--cream);
   border: 1.5px solid var(--ink);
+}
+
+.math-intro {
   padding: 32px;
   margin-bottom: 32px;
 }
-
 .math-intro h2 {
   font-family: 'Fraunces', serif;
   font-weight: 600;
   font-size: 28px;
   margin-bottom: 12px;
 }
-
 .math-intro p {
   font-size: 15px;
   line-height: 1.7;
   max-width: 720px;
 }
 
-.math-block {
-  background: var(--cream);
-  border: 1.5px solid var(--ink);
-  padding: 28px;
-  margin-bottom: 20px;
-}
+.math-block { padding: 28px; margin-bottom: 20px; }
 
 .math-block-header {
   display: flex;
@@ -534,11 +638,7 @@ body::before {
   color: var(--paper);
 }
 
-.math-body {
-  font-size: 14px;
-  line-height: 1.7;
-  margin-bottom: 16px;
-}
+.math-body { font-size: 14px; line-height: 1.7; margin-bottom: 16px; }
 
 .formula {
   background: var(--paper);
@@ -581,12 +681,7 @@ body::before {
 }
 
 /* SIMULATOR */
-.sim-section {
-  background: var(--cream);
-  border: 1.5px solid var(--ink);
-  padding: 28px;
-  margin-bottom: 32px;
-}
+.sim-section { padding: 28px; margin-bottom: 32px; }
 
 .sim-row {
   display: grid;
@@ -667,6 +762,165 @@ body::before {
   opacity: 0.8;
 }
 
+/* ========== GOALS / CHARTS / SCANNER specific ========== */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 16px 0 20px;
+}
+
+.kpi-card {
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  padding: 18px 20px;
+}
+.kpi-card.invert {
+  background: var(--ink);
+  color: var(--paper);
+}
+.kpi-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+.kpi-value {
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+.kpi-value .small { font-size: 16px; color: var(--muted); }
+.kpi-card.invert .kpi-value .small { color: var(--amber); }
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+@media (max-width: 980px) {
+  .charts-grid { grid-template-columns: 1fr; }
+  .kpi-row { grid-template-columns: 1fr; }
+}
+
+.chart-card {
+  background: var(--cream);
+  border: 1.5px solid var(--ink);
+  padding: 24px;
+}
+.chart-card h3 {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+.chart-card .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* OCR Drop zone */
+.ocr-zone {
+  border: 2px dashed var(--ink);
+  background: var(--paper);
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ocr-zone.drag { background: var(--cream); transform: scale(0.99); }
+.ocr-zone h4 {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+.ocr-zone p {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.ocr-preview {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 20px;
+  margin-top: 20px;
+  align-items: start;
+}
+.ocr-preview img {
+  width: 100%;
+  border: 1.5px solid var(--ink);
+  display: block;
+}
+.ocr-parsed {
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  padding: 16px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  max-height: 240px;
+  overflow: auto;
+}
+.ocr-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 14px;
+  margin-top: 14px;
+  font-size: 13px;
+}
+.ocr-fields .k {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ocr-fields .v { font-weight: 600; }
+
+.btn {
+  display: inline-block;
+  padding: 10px 18px;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1.5px solid var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:hover { background: var(--rust); border-color: var(--rust); }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.ghost:hover { background: var(--cream); color: var(--ink); }
+
 /* FOOTER */
 .footer {
   text-align: center;
@@ -691,12 +945,13 @@ body::before {
   .header { flex-direction: column; align-items: flex-start; gap: 16px; }
   .tabs { flex-wrap: wrap; }
   .sim-row { grid-template-columns: 1fr; gap: 8px; }
+  .gami-strip { grid-template-columns: 1fr; gap: 14px; }
+  .ocr-preview { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
 <div class="container">
-
   <header class="header">
     <div class="logo">
       <div class="logo-mark">F</div>
@@ -704,15 +959,36 @@ body::before {
     </div>
     <div class="tabs">
       <button class="tab active" data-page="dashboard">Dashboard</button>
+      <button class="tab" data-page="goals">Life Goals</button>
+      <button class="tab" data-page="charts">Charts</button>
+      <button class="tab" data-page="scanner">Scanner · OCR</button>
       <button class="tab" data-page="math">เบื้องหลัง · Math</button>
       <button class="tab" data-page="simulator">Simulator</button>
     </div>
   </header>
 
+  <!-- ========== GAMIFICATION STRIP (visible on all pages) ========== -->
+  <section class="gami-strip" id="gamiStrip">
+    <div class="streak">
+      <span class="streak-num" id="streakNum">0</span>
+      <span>วัน · บันทึกต่อเนื่อง</span>
+    </div>
+    <div class="gami-progress">
+      <div class="gami-progress-label">
+        <span id="gamiGoalLabel">เป้าหมายกองทุนฉุกเฉิน</span>
+        <span id="gamiGoalPct">0%</span>
+      </div>
+      <div class="gami-progress-bar">
+        <div class="gami-progress-fill" id="gamiGoalFill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="badges-row" id="badgesRow"></div>
+  </section>
+
   <!-- ========== DASHBOARD ========== -->
   <div class="page active" id="dashboard">
     <div class="layout">
-      
+
       <!-- INPUT PANEL -->
       <aside class="input-panel">
         <div class="panel-title">ข้อมูลของคุณ</div>
@@ -784,10 +1060,10 @@ body::before {
         <section class="hero">
           <div>
             <div class="score-label">Financial Health Score</div>
-            <div class="score-number" id="scoreNum">72<sup>/100</sup></div>
-            <div class="score-grade" id="scoreGrade">★ ค่อนข้างดี · STABLE</div>
+            <div class="score-number" id="scoreNum">—<sup>/100</sup></div>
+            <div class="score-grade" id="scoreGrade">○ รอข้อมูล · WAITING</div>
             <p class="score-description" id="scoreDesc">
-              สถานะการเงินของคุณอยู่ในเกณฑ์ดี เก็บออมสม่ำเสมอ แต่กองทุนฉุกเฉินยังไม่พอ
+              กรอกข้อมูลด้านซ้าย ระบบจะคำนวณคะแนนสุขภาพการเงินทันที
             </p>
           </div>
 
@@ -807,15 +1083,15 @@ body::before {
                 <line x1="200" y1="200" x2="48" y2="150"/>
               </g>
               <polygon id="radarShape" class="radar-data"
-                       points="200,70 322,162 270,290 130,295 80,160" 
-                       fill="#2d4a2b" fill-opacity="0.25" 
+                       points="200,200 200,200 200,200 200,200 200,200"
+                       fill="#2d4a2b" fill-opacity="0.25"
                        stroke="#2d4a2b" stroke-width="2"/>
               <g id="radarPoints" fill="#c1502e" class="radar-data">
-                <circle cx="200" cy="70" r="5"/>
-                <circle cx="322" cy="162" r="5"/>
-                <circle cx="270" cy="290" r="5"/>
-                <circle cx="130" cy="295" r="5"/>
-                <circle cx="80" cy="160" r="5"/>
+                <circle cx="200" cy="200" r="5"/>
+                <circle cx="200" cy="200" r="5"/>
+                <circle cx="200" cy="200" r="5"/>
+                <circle cx="200" cy="200" r="5"/>
+                <circle cx="200" cy="200" r="5"/>
               </g>
             </svg>
             <div class="radar-label" style="top: 4%; left: 50%; transform: translateX(-50%);">ออม</div>
@@ -834,13 +1110,162 @@ body::before {
         <section class="advice-section">
           <div class="advice-header">
             <div class="advice-dot"></div>
-            <div class="advice-title">Analysis · คำแนะนำเฉพาะคุณ</div>
+            <div class="advice-title">AI · พยากรณ์ + คำแนะนำเฉพาะคุณ</div>
           </div>
           <div class="advice-content" id="adviceContent">
-            จุดที่น่ากังวลที่สุดคือ <em>กองทุนฉุกเฉิน</em> กำลังคำนวณ...
+            <em>รอข้อมูลของคุณ...</em>
           </div>
+          <span class="forecast-chip" id="forecastChip" style="display:none;"></span>
         </section>
       </main>
+    </div>
+  </div>
+
+  <!-- ========== LIFE GOALS ========== -->
+  <div class="page" id="goals">
+    <div class="math-intro">
+      <h2>Life Goals · เป้าหมาย Passive Income</h2>
+      <p>กำหนดเป้าหมายเงินปันผล/กระแสเงินสดต่อเดือนที่อยากได้ ระบบจะคำนวณเงินต้น ($P$) ที่ต้องสะสมเพื่อสร้างรายได้นั้นโดยอัตโนมัติ พร้อมจำลองเส้นทางการเติบโตของพอร์ตด้วยดอกเบี้ยทบต้น</p>
+    </div>
+
+    <div class="math-block">
+      <div class="math-block-header">
+        <div class="math-num">01</div>
+        <div class="math-title">กำหนดเป้าหมาย</div>
+        <div class="math-level">Goal</div>
+      </div>
+
+      <div class="sim-row">
+        <div class="sim-label">Passive Income เป้าหมาย <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">(บาท/เดือน)</span></div>
+        <input type="range" class="sim-slider" id="goalIncome" min="5000" max="200000" step="1000" value="30000">
+        <div class="sim-value" id="goalIncomeVal">30,000 บาท</div>
+      </div>
+      <div class="sim-row">
+        <div class="sim-label">อัตราผลตอบแทน $r$ <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">(% ต่อปี)</span></div>
+        <input type="range" class="sim-slider" id="goalRate" min="2" max="15" step="0.5" value="6">
+        <div class="sim-value" id="goalRateVal">6.0%</div>
+      </div>
+      <div class="sim-row">
+        <div class="sim-label">ลงทุนเพิ่มต่อเดือน <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">(DCA)</span></div>
+        <input type="range" class="sim-slider" id="goalContrib" min="0" max="50000" step="500" value="10000">
+        <div class="sim-value" id="goalContribVal">10,000 บาท</div>
+      </div>
+      <div class="sim-row">
+        <div class="sim-label">เงินต้นเริ่มต้น <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">(บาท)</span></div>
+        <input type="range" class="sim-slider" id="goalStart" min="0" max="2000000" step="10000" value="50000">
+        <div class="sim-value" id="goalStartVal">50,000 บาท</div>
+      </div>
+
+      <div class="formula">
+        P = (I<sub>m</sub> × 12) ÷ r  →  เงินต้นสะสมที่ต้องการ<br>
+        A = P(1 + r/n)<sup>nt</sup>   →  มูลค่าพอร์ตทบต้นในอนาคต
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card invert">
+          <div class="kpi-label">เงินต้นที่ต้องสะสม (P)</div>
+          <div class="kpi-value"><span id="goalP">—</span> <span class="small">บาท</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">ระยะเวลาถึงเป้า (DCA)</div>
+          <div class="kpi-value"><span id="goalYears">—</span> <span class="small">ปี</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">มูลค่าพอร์ตเมื่อถึงเป้า</div>
+          <div class="kpi-value"><span id="goalFV">—</span> <span class="small">บาท</span></div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="background:var(--paper); margin-top:8px;">
+        <h3>เส้นทางเติบโตของพอร์ต</h3>
+        <div class="sub">— Compound Growth Projection</div>
+        <svg id="goalChart" viewBox="0 0 720 280" style="width:100%; height:auto;"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CHARTS / VISUALIZATION HUB ========== -->
+  <div class="page" id="charts">
+    <div class="math-intro">
+      <h2>Financial Visualization Hub</h2>
+      <p>มองพอร์ตของคุณแบบมีมิติ — Doughnut Chart แสดงสัดส่วนการลงทุน (Asset Allocation), Area Chart แสดงการเติบโตของความมั่งคั่งสุทธิ (Net Worth) เพื่อให้เห็น "ปริมาตร" ของเงินที่กำลังสะสม</p>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Asset Allocation — Recommended 2025</h3>
+        <div class="sub">— Doughnut · พอร์ตกระจายความเสี่ยงตามหลักสากล</div>
+        <svg id="doughnut" viewBox="0 0 320 320" style="width:100%; height:auto;"></svg>
+        <div class="chart-legend" id="doughnutLegend"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Net Worth Growth — 10 ปี</h3>
+        <div class="sub">— Area Chart · จากเงินสะสมรายเดือนปัจจุบัน</div>
+        <svg id="netWorthArea" viewBox="0 0 720 320" style="width:100%; height:auto;"></svg>
+        <div class="chart-legend">
+          <span><span class="legend-dot" style="background:var(--moss);"></span>Net Worth คาดการณ์</span>
+          <span><span class="legend-dot" style="background:var(--amber);"></span>Net Worth ปัจจุบัน</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="math-block">
+      <div class="math-block-header">
+        <div class="math-num">★</div>
+        <div class="math-title">สัดส่วนพอร์ตของคุณ vs. แนะนำ</div>
+        <div class="math-level">Comparison</div>
+      </div>
+      <div class="math-body">เปรียบเทียบสัดส่วน เงินสด/ลงทุน/อื่นๆ ที่คุณกรอกใน Dashboard กับสัดส่วนที่ AI แนะนำ — ดูง่าย ๆ ว่าควรโยกอะไรไปไหน</div>
+      <div class="charts-grid">
+        <div class="chart-card" style="background:var(--paper);">
+          <h3>คุณ · ตอนนี้</h3>
+          <div class="sub">— Your Current Allocation</div>
+          <svg id="doughnutUser" viewBox="0 0 320 320" style="width:100%; height:auto;"></svg>
+          <div class="chart-legend" id="doughnutUserLegend"></div>
+        </div>
+        <div class="chart-card" style="background:var(--paper);">
+          <h3>AI Recommendation</h3>
+          <div class="sub">— ปรับสมดุลตามอายุและเป้าหมาย</div>
+          <div id="aiRebalance" style="font-family:'IBM Plex Sans Thai';font-size:14px;line-height:1.8;">
+            <em>กรอกข้อมูลก่อน ระบบจะแนะนำการ rebalance ที่นี่</em>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SCANNER · OCR ========== -->
+  <div class="page" id="scanner">
+    <div class="math-intro">
+      <h2>Receipt Scanner · AI OCR</h2>
+      <p>ลดภาระการกรอกตัวเลขด้วยตนเอง — ลากภาพใบเสร็จลงในกล่องด้านล่าง หรือกดเลือกไฟล์ ระบบจะใช้ Tesseract.js (Open-source OCR ทำงานในเบราว์เซอร์) อ่านข้อความ แล้วใช้ Regex แยก <em>ชื่อร้านค้า / วันที่ / ยอดรวม</em> ให้อัตโนมัติ</p>
+    </div>
+
+    <div class="math-block">
+      <div class="ocr-zone" id="ocrZone">
+        <h4>วางภาพใบเสร็จที่นี่ หรือคลิกเพื่อเลือกไฟล์</h4>
+        <p>รองรับ JPG · PNG · WEBP · ทำงานในเครื่องคุณ ไม่ส่งภาพออกนอก</p>
+        <input type="file" id="ocrFile" accept="image/*" style="display:none;">
+      </div>
+
+      <div class="ocr-preview" id="ocrPreview" style="display:none;">
+        <img id="ocrImg" alt="receipt preview">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <strong id="ocrStatus" style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--rust);">กำลังประมวลผล...</strong>
+            <button class="btn ghost" id="ocrReset" style="padding:6px 12px;">รีเซ็ต</button>
+          </div>
+          <div class="ocr-fields">
+            <span class="k">ร้านค้า</span><span class="v" id="ocrMerchant">—</span>
+            <span class="k">วันที่</span><span class="v" id="ocrDate">—</span>
+            <span class="k">ยอดรวม</span><span class="v" id="ocrTotal">—</span>
+            <span class="k">หมวด (เดา)</span><span class="v" id="ocrCategory">—</span>
+          </div>
+          <button class="btn" id="ocrApply" style="margin-top:14px;" disabled>นำยอดไปเพิ่มในรายจ่าย</button>
+          <div class="ocr-parsed" id="ocrText" style="margin-top:14px;">— ข้อความดิบจากภาพจะแสดงที่นี่ —</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -871,7 +1296,7 @@ body::before {
         <div class="math-title">Piecewise Function แปลงเป็นคะแนน 0-100</div>
         <div class="math-level">ม.ปลาย</div>
       </div>
-      <div class="math-body">แต่ละ ratio มีเป้าหมายต่างกัน เราใช้ฟังก์ชันเป็นช่วงเพื่อแปลงทุก ratio ให้เป็นคะแนน 0-100 เปรียบเทียบกันได้ ตัวอย่างของอัตราการออม:</div>
+      <div class="math-body">แต่ละ ratio มีเป้าหมายต่างกัน เราใช้ฟังก์ชันเป็นช่วงเพื่อแปลงทุก ratio ให้เป็นคะแนน 0-100 เปรียบเทียบกันได้</div>
       <div class="formula">          ⎧ 0                  ถ้า x ≤ 0<br>f(x) =   ⎨ 100·(x/0.20)        ถ้า 0 &lt; x ≤ 0.20<br>          ⎩ 100                ถ้า x &gt; 0.20</div>
       <div class="math-live">
         <span class="label">คะแนนแต่ละมิติของคุณ</span>
@@ -885,8 +1310,8 @@ body::before {
         <div class="math-title">Weighted Sum รวมเป็นคะแนนเดียว</div>
         <div class="math-level">ม.ปลาย</div>
       </div>
-      <div class="math-body">ไม่ใช่เอา 4 คะแนนมาเฉลี่ยตรงๆ แต่ใช้น้ำหนักต่างกันตามความสำคัญ กองทุนฉุกเฉินสำคัญสุด (0.30) เพราะคือเส้นกั้นวิกฤต</div>
-      <div class="formula">Score = w₁·S_ออม + w₂·S_ฉุกเฉิน + w₃·S_หนี้ + w₄·S_ลงทุน<br><br>weights = [0.25, 0.30, 0.25, 0.20]<br>Σ wᵢ = 1.00</div>
+      <div class="math-body">ไม่ใช่เอา 4 คะแนนมาเฉลี่ยตรงๆ แต่ใช้น้ำหนักต่างกันตามความสำคัญ</div>
+      <div class="formula">Score = w₁·S_ออม + w₂·S_ฉุกเฉิน + w₃·S_หนี้ + w₄·S_ลงทุน<br><br>weights = [0.25, 0.30, 0.25, 0.20]</div>
       <div class="math-live">
         <span class="label">คะแนนรวมของคุณ</span>
         <div id="liveWeighted">กำลังคำนวณ...</div>
@@ -899,7 +1324,7 @@ body::before {
         <div class="math-title">Future Value of Annuity</div>
         <div class="math-level">ม.ปลาย</div>
       </div>
-      <div class="math-body">คำแนะนำที่บอก "ต้องเก็บอีกกี่เดือนถึงเป้า" คำนวณจากสูตรเงินรายงวด โดยให้ดอกเบี้ย 1.5% ต่อปี (บัญชีออมทรัพย์ดิจิทัล)</div>
+      <div class="math-body">คำแนะนำที่บอก "ต้องเก็บอีกกี่เดือนถึงเป้า" คำนวณจากสูตรเงินรายงวด</div>
       <div class="formula">FV = PMT × [((1+r)ⁿ - 1) / r]<br><br>หาจำนวนเดือน n เมื่อรู้ FV เป้าหมาย:<br>n = log(1 + FV·r/PMT) / log(1 + r)</div>
       <div class="math-live">
         <span class="label">เวลาถึงเป้ากองทุนฉุกเฉิน 6 เดือน</span>
@@ -913,14 +1338,27 @@ body::before {
         <div class="math-title">Z-Score เทียบกับคนวัยเดียวกัน</div>
         <div class="math-level">ม.ปลาย</div>
       </div>
-      <div class="math-body">ใช้สถิติบอกว่าคุณดีกว่า/แย่กว่าค่าเฉลี่ยกี่ส่วนเบี่ยงเบนมาตรฐาน สมมติคนวัย 30 ออมเฉลี่ย 15% (μ) ส่วนเบี่ยงเบน 8% (σ)</div>
-      <div class="formula">z = (x - μ) / σ<br><br>z &gt; 0 → ดีกว่าค่าเฉลี่ย<br>z &gt; 1 → top ~16% ของคนวัยเดียวกัน<br>z &gt; 2 → top ~2.5%</div>
+      <div class="math-body">สมมติคนวัย 30 ออมเฉลี่ย 15% (μ) ส่วนเบี่ยงเบน 8% (σ)</div>
+      <div class="formula">z = (x - μ) / σ</div>
       <div class="math-live">
         <span class="label">Z-score อัตราการออมของคุณ</span>
         <div id="liveZ">กำลังคำนวณ...</div>
       </div>
     </div>
 
+    <div class="math-block">
+      <div class="math-block-header">
+        <div class="math-num">06</div>
+        <div class="math-title">Linear Regression Forecast</div>
+        <div class="math-level">มหา’ลัย ปี 1</div>
+      </div>
+      <div class="math-body">พยากรณ์เงินคงเหลือ 12 เดือนข้างหน้าด้วย Least-Squares Linear Regression จากประวัติเงินออมของคุณ (ระบบจำลอง series 6 เดือนย้อนหลังให้อัตโนมัติจากค่าที่กรอก)</div>
+      <div class="formula">ŷ = m·x + b<br><br>m = Σ(xᵢ - x̄)(yᵢ - ȳ) / Σ(xᵢ - x̄)²<br>b = ȳ - m·x̄</div>
+      <div class="math-live">
+        <span class="label">เส้นพยากรณ์</span>
+        <div id="liveLR">กำลังคำนวณ...</div>
+      </div>
+    </div>
   </div>
 
   <!-- ========== SIMULATOR ========== -->
@@ -954,439 +1392,926 @@ body::before {
 
       <div class="sim-result">
         <div class="sim-result-label">คะแนนใหม่หลังปรับ</div>
-        <div class="sim-result-value" id="simScore">72/100</div>
+        <div class="sim-result-value" id="simScore">—/100</div>
         <div class="sim-result-detail" id="simDelta">ยังไม่ได้ปรับ — เลื่อน slider ด้านบน</div>
       </div>
     </div>
   </div>
 
   <footer class="footer">
-    FinPulse · Prototype v0.1 · คำนวณ Real-time ด้วยคณิตศาสตร์
+    FinPulse · Prototype v0.2 · Math + AI · Service-oriented architecture
   </footer>
-
 </div>
 
 <script>
-// ========== STATE ==========
+/* =========================================================================
+   FinPulse — Service-Oriented Architecture (single-file edition)
+
+   Layers:
+     - State / Store        : application data
+     - FinanceService       : ratios, scoring, weighted sum
+     - GoalsService         : passive-income principal + compound growth
+     - ForecastService      : linear regression + cashflow projection
+     - ChartService         : Doughnut + Area + Line (pure SVG)
+     - OCRService           : Tesseract.js wrapper + regex parser
+     - AIService            : rule-based contextual advisor (LLM-ready)
+     - GamificationService  : streaks, badges, progress (localStorage)
+     - UIController         : binds DOM events + renders
+   ========================================================================= */
+
+/* ----- STATE / STORE ----- */
 const state = {
-  income: 0,
-  expense: 0,
-  saving: 0,
-  cash: 0,
-  invest: 0,
-  other: 0,
-  debt: 0
+  income: 0, expense: 0, saving: 0,
+  cash: 0, invest: 0, other: 0, debt: 0
 };
 
-const weights = { saving: 0.25, emergency: 0.30, debt: 0.25, invest: 0.20 };
+const RECOMMENDED_ALLOCATION = [
+  { key: 'intl_stocks', label: 'หุ้นต่างประเทศ',  pct: 29.6, color: '#2d4a2b' },
+  { key: 'th_stocks',   label: 'หุ้นไทย',          pct: 22.5, color: '#6b7a3a' },
+  { key: 'bonds',       label: 'พันธบัตรรัฐบาล',  pct: 22.0, color: '#8a8674' },
+  { key: 'cash',        label: 'เงินฝาก/เงินสด',  pct: 10.7, color: '#d49b3f' },
+  { key: 'gold',        label: 'ทองคำ',           pct: 8.1,  color: '#c1502e' },
+  { key: 'other',       label: 'อื่นๆ',           pct: 7.1,  color: '#3a3a30' }
+];
 
-// ========== MATH FUNCTIONS ==========
-function calcRatios(s) {
-  return {
-    savingsRate: s.income > 0 ? (s.saving / s.income) * 100 : 0,
-    emergencyMonths: s.expense > 0 ? s.cash / s.expense : 0,
-    debtToIncome: s.income > 0 ? (s.debt / s.income) * 100 : 0,
-    investmentRatio: (s.cash + s.invest + s.other) > 0 
-      ? (s.invest / (s.cash + s.invest + s.other)) * 100 : 0
+/* =========================================================
+   SERVICE · FinanceService
+   ========================================================= */
+const FinanceService = (() => {
+  const weights = { saving: 0.25, emergency: 0.30, debt: 0.25, invest: 0.20 };
+
+  function calcRatios(s) {
+    const total = s.cash + s.invest + s.other;
+    return {
+      savingsRate:    s.income  > 0 ? (s.saving / s.income)  * 100 : 0,
+      emergencyMonths:s.expense > 0 ?  s.cash   / s.expense        : 0,
+      debtToIncome:   s.income  > 0 ? (s.debt   / s.income)  * 100 : 0,
+      investmentRatio:total     > 0 ? (s.invest / total)     * 100 : 0
+    };
+  }
+
+  const piecewise = {
+    saving:    r => r <= 0  ? 0   : r >= 20 ? 100 : (r / 20)  * 100,
+    emergency: m => m <= 0  ? 0   : m >= 6  ? 100 : (m / 6)   * 100,
+    debt:      r => r <= 20 ? 100 : r >= 50 ? 0   : 100 - ((r - 20) / 30) * 100,
+    invest:    r => r <= 0  ? 0   : r >= 50 ? 100 : (r / 50)  * 100
   };
-}
 
-// Piecewise scoring functions
-function scoreSaving(rate) {
-  if (rate <= 0) return 0;
-  if (rate >= 20) return 100;
-  return (rate / 20) * 100;
-}
+  function calcScores(r) {
+    return {
+      saving:    piecewise.saving(r.savingsRate),
+      emergency: piecewise.emergency(r.emergencyMonths),
+      debt:      piecewise.debt(r.debtToIncome),
+      invest:    piecewise.invest(r.investmentRatio)
+    };
+  }
 
-function scoreEmergency(months) {
-  if (months <= 0) return 0;
-  if (months >= 6) return 100;
-  return (months / 6) * 100;
-}
+  function weightedScore(sc) {
+    return sc.saving    * weights.saving    +
+           sc.emergency * weights.emergency +
+           sc.debt      * weights.debt      +
+           sc.invest    * weights.invest;
+  }
 
-function scoreDebt(ratio) {
-  if (ratio <= 20) return 100;
-  if (ratio >= 50) return 0;
-  return 100 - ((ratio - 20) / 30) * 100;
-}
+  function monthsToTarget(target, pmt, annualRate = 0.015) {
+    if (pmt <= 0) return Infinity;
+    const r = annualRate / 12;
+    if (r === 0) return target / pmt;
+    return Math.log(1 + (target * r) / pmt) / Math.log(1 + r);
+  }
 
-function scoreInvest(ratio) {
-  if (ratio <= 0) return 0;
-  if (ratio >= 50) return 100;
-  return (ratio / 50) * 100;
-}
+  function isEmpty(s) {
+    return s.income === 0 && s.expense === 0 && s.saving === 0
+        && s.cash === 0 && s.invest === 0 && s.other === 0 && s.debt === 0;
+  }
 
-function calcScores(r) {
-  return {
-    saving: scoreSaving(r.savingsRate),
-    emergency: scoreEmergency(r.emergencyMonths),
-    debt: scoreDebt(r.debtToIncome),
-    invest: scoreInvest(r.investmentRatio)
-  };
-}
+  return { weights, calcRatios, calcScores, weightedScore, monthsToTarget, isEmpty };
+})();
 
-function weightedScore(sc) {
-  return sc.saving * weights.saving + 
-         sc.emergency * weights.emergency + 
-         sc.debt * weights.debt + 
-         sc.invest * weights.invest;
-}
+/* =========================================================
+   SERVICE · GoalsService — Passive Income + Compound Growth
+   ========================================================= */
+const GoalsService = (() => {
+  // P = (Im * 12) / r        (เงินต้นที่ต้องการ)
+  function principalForIncome(monthlyIncome, annualRate) {
+    if (annualRate <= 0) return Infinity;
+    return (monthlyIncome * 12) / (annualRate / 100);
+  }
 
-// Future Value of Annuity: หาจำนวนเดือนถึงเป้า
-function monthsToTarget(target, monthlyPmt, annualRate = 0.015) {
-  if (monthlyPmt <= 0) return Infinity;
-  const r = annualRate / 12;
-  if (r === 0) return target / monthlyPmt;
-  const n = Math.log(1 + (target * r) / monthlyPmt) / Math.log(1 + r);
-  return n;
-}
+  // A = P(1 + r/n)^(nt)      ดอกเบี้ยทบต้น (n = ความถี่ทบต้นต่อปี)
+  function compoundValue(P, annualRatePct, years, n = 12) {
+    const r = annualRatePct / 100;
+    return P * Math.pow(1 + r / n, n * years);
+  }
 
-// ========== METRIC CARDS ==========
-function statusClass(score) {
-  if (score >= 75) return { card: '', badge: 'status-good', text: 'ดี' };
-  if (score >= 50) return { card: 'warning', badge: 'status-warn', text: 'ควรปรับ' };
-  return { card: 'danger', badge: 'status-bad', text: 'ต่ำเกิน' };
-}
-
-function fmtMoney(n) {
-  return Math.round(n).toLocaleString('th-TH');
-}
-
-function renderMetrics(r, sc) {
-  const grid = document.getElementById('metricsGrid');
-  const empty = isEmpty();
-  
-  const metrics = [
-    {
-      name: 'อัตราการออม',
-      formula: '= เงินออม ÷ รายได้ × 100',
-      value: empty ? '—' : r.savingsRate.toFixed(1),
-      unit: '%',
-      detail: empty ? 'รอข้อมูล' : `${fmtMoney(state.saving)} / ${fmtMoney(state.income)} บาท`,
-      score: sc.saving,
-      target: 'เป้าหมาย ≥ 20%'
-    },
-    {
-      name: 'กองทุนฉุกเฉิน',
-      formula: '= เงินสด ÷ รายจ่าย/เดือน',
-      value: empty ? '—' : r.emergencyMonths.toFixed(1),
-      unit: 'เดือน',
-      detail: empty ? 'รอข้อมูล' : `มี ${fmtMoney(state.cash)} · จ่าย ${fmtMoney(state.expense)}/เดือน`,
-      score: sc.emergency,
-      target: 'เป้าหมาย ≥ 6 เดือน'
-    },
-    {
-      name: 'อัตราหนี้สิน',
-      formula: '= ภาระหนี้ ÷ รายได้ × 100',
-      value: empty ? '—' : r.debtToIncome.toFixed(1),
-      unit: '%',
-      detail: empty ? 'รอข้อมูล' : `ผ่อน ${fmtMoney(state.debt)}/เดือน`,
-      score: sc.debt,
-      target: 'เป้าหมาย ≤ 40%'
-    },
-    {
-      name: 'สัดส่วนเงินลงทุน',
-      formula: '= ลงทุน ÷ ทรัพย์สินรวม × 100',
-      value: empty ? '—' : r.investmentRatio.toFixed(1),
-      unit: '%',
-      detail: empty ? 'รอข้อมูล' : `ลงทุน ${fmtMoney(state.invest)} จาก ${fmtMoney(state.cash + state.invest + state.other)}`,
-      score: sc.invest,
-      target: 'เป้าหมาย ≥ 50%'
+  // FV with monthly contributions (annuity): FV = P*(1+r/n)^(nt) + PMT*((1+r/n)^(nt)-1)/(r/n)
+  function projectGrowth({ start = 0, monthlyContrib = 0, annualRatePct = 6, years = 30, stepMonths = 1 }) {
+    const r = annualRatePct / 100;
+    const m = r / 12;
+    const totalMonths = Math.round(years * 12);
+    const series = [];
+    let value = start;
+    for (let i = 0; i <= totalMonths; i += stepMonths) {
+      if (i === 0) { series.push({ month: 0, value }); continue; }
+      value = value * (1 + m) + monthlyContrib;
+      if (i % stepMonths === 0) series.push({ month: i, value });
     }
-  ];
-
-  const colors = ['#2d4a2b', '#d49b3f', '#c1502e'];
-
-  grid.innerHTML = metrics.map(m => {
-    const st = empty 
-      ? { card: '', badge: '', text: '—' }
-      : statusClass(m.score);
-    const barColor = empty ? '#8a8674' : (m.score >= 75 ? colors[0] : m.score >= 50 ? colors[1] : colors[2]);
-    const barWidth = empty ? 0 : Math.min(m.score, 100);
-    const scoreText = empty ? '—' : `คะแนน ${m.score.toFixed(0)}/100`;
-    return `
-      <div class="metric-card ${st.card}">
-        <div class="metric-header">
-          <div>
-            <div class="metric-name">${m.name}</div>
-            <div class="metric-formula">${m.formula}</div>
-          </div>
-          <div class="metric-status ${st.badge}">${st.text}</div>
-        </div>
-        <div class="metric-value">${m.value}<span class="unit"> ${m.unit}</span></div>
-        <div class="metric-unit">${m.detail}</div>
-        <div class="metric-bar">
-          <div class="metric-bar-fill" style="width: ${barWidth}%; background: ${barColor};"></div>
-        </div>
-        <div class="metric-target">${m.target} · ${scoreText}</div>
-      </div>
-    `;
-  }).join('');
-}
-
-// ========== RADAR ==========
-function updateRadar(sc) {
-  // 5 axes: ออม(top), ลงทุน(top-right), หนี้(bottom-right), ฉุกเฉิน(bottom-left), รายจ่าย(top-left)
-  const center = 200;
-  const maxR = 160;
-  const angles = [-90, -18, 54, 126, 198]; // degrees
-  
-  // expense score = ratio of spending vs income (lower is better)
-  const expenseScore = state.income > 0 
-    ? Math.max(0, 100 - ((state.expense / state.income) * 100)) : 0;
-  
-  const scores = [sc.saving, sc.invest, sc.debt, sc.emergency, expenseScore];
-  
-  const points = angles.map((angle, i) => {
-    const rad = angle * Math.PI / 180;
-    const r = (scores[i] / 100) * maxR;
-    const x = center + r * Math.cos(rad);
-    const y = center + r * Math.sin(rad);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  
-  document.getElementById('radarShape').setAttribute('points', points.join(' '));
-  
-  const circles = document.getElementById('radarPoints').querySelectorAll('circle');
-  points.forEach((p, i) => {
-    const [x, y] = p.split(',');
-    circles[i].setAttribute('cx', x);
-    circles[i].setAttribute('cy', y);
-  });
-}
-
-// ========== SCORE DISPLAY ==========
-function isEmpty() {
-  return state.income === 0 && state.expense === 0 && state.saving === 0 
-    && state.cash === 0 && state.invest === 0 && state.other === 0 && state.debt === 0;
-}
-
-function updateScore(total, r) {
-  const elNum = document.getElementById('scoreNum');
-  const elGrade = document.getElementById('scoreGrade');
-  const elDesc = document.getElementById('scoreDesc');
-  
-  if (isEmpty()) {
-    elNum.innerHTML = `—<sup>/100</sup>`;
-    elNum.style.color = 'var(--muted)';
-    elGrade.textContent = '○ รอข้อมูล · WAITING';
-    elGrade.style.background = 'var(--muted)';
-    elDesc.textContent = 'กรอกข้อมูลทางการเงินของคุณในช่องด้านซ้าย ระบบจะคำนวณคะแนนสุขภาพการเงินทันทีที่กรอกครบ';
-    return;
+    return series;
   }
-  
-  elNum.innerHTML = `${Math.round(total)}<sup>/100</sup>`;
-  
-  let grade, color, desc;
-  if (total >= 80) {
-    grade = '★★★ ดีมาก · EXCELLENT';
-    color = '#2d4a2b';
-    desc = 'สถานะการเงินแข็งแกร่งมาก ครบทุกมิติ พร้อมรับมือเรื่องไม่คาดฝัน และมีศักยภาพสร้างความมั่งคั่งระยะยาว';
-  } else if (total >= 65) {
-    grade = '★★ ค่อนข้างดี · STABLE';
-    color = '#2d4a2b';
-    desc = 'สถานะการเงินอยู่ในเกณฑ์ดี มีฐานที่มั่นคง แต่ยังมีจุดที่ควรปรับเพื่อก้าวขึ้นไปอีกระดับ';
-  } else if (total >= 50) {
-    grade = '★ พอใช้ · NEEDS WORK';
-    color = '#d49b3f';
-    desc = 'ฐานพอใช้ได้ แต่มีหลายจุดอ่อนที่ต้องเร่งแก้ไข โดยเฉพาะถ้าเจอเหตุไม่คาดฝัน';
-  } else {
-    grade = '⚠ เสี่ยง · CRITICAL';
-    color = '#c1502e';
-    desc = 'สถานะการเงินอยู่ในจุดเสี่ยง ต้องปรับโครงสร้างใหม่โดยด่วน เริ่มจากกองทุนฉุกเฉินและลดรายจ่ายฟุ่มเฟือย';
-  }
-  
-  elNum.style.color = color;
-  elGrade.textContent = grade;
-  elGrade.style.background = color;
-  elDesc.textContent = desc;
-}
 
-// ========== ADVICE ==========
-function generateAdvice(r, sc) {
-  if (isEmpty()) {
-    document.getElementById('adviceContent').innerHTML = 
-      `<em>รอข้อมูลของคุณ...</em> ระบบจะวิเคราะห์จุดอ่อนที่สุดของสุขภาพการเงิน และแนะนำ action ที่เจาะจงเป็นตัวเลขให้ทันทีหลังจากกรอกข้อมูล`;
-    return;
+  function yearsToReach(target, { start = 0, monthlyContrib, annualRatePct }) {
+    if (start >= target) return 0;
+    if (monthlyContrib <= 0 && annualRatePct <= 0) return Infinity;
+    const m = (annualRatePct / 100) / 12;
+    // bisection on months
+    let lo = 0, hi = 12 * 80;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      const fv = start * Math.pow(1 + m, mid) + (m > 0
+        ? monthlyContrib * (Math.pow(1 + m, mid) - 1) / m
+        : monthlyContrib * mid);
+      if (fv >= target) hi = mid; else lo = mid;
+    }
+    return hi / 12;
   }
-  
-  // หาจุดอ่อนที่สุด
-  const points = [
-    { key: 'emergency', score: sc.emergency, name: 'กองทุนฉุกเฉิน' },
-    { key: 'saving', score: sc.saving, name: 'การออม' },
-    { key: 'debt', score: sc.debt, name: 'ภาระหนี้' },
-    { key: 'invest', score: sc.invest, name: 'การลงทุน' }
-  ];
-  points.sort((a, b) => a.score - b.score);
-  const weakest = points[0];
-  
-  let advice = '';
-  if (weakest.key === 'emergency') {
-    const target = state.expense * 6;
-    const gap = target - state.cash;
-    if (gap > 0) {
-      const months12 = gap / 12;
-      advice = `จุดที่น่ากังวลที่สุดคือ <em>กองทุนฉุกเฉินที่ยังขาดอีก ${(6 - r.emergencyMonths).toFixed(1)} เดือน</em> ถ้าตกงานกะทันหันอาจลำบาก แนะนำให้เก็บเพิ่ม <em>${fmtMoney(months12)} บาท/เดือน</em> จะถึงเป้าใน 12 เดือน เก็บไว้ในกองทุนรวมตลาดเงิน`;
+
+  return { principalForIncome, compoundValue, projectGrowth, yearsToReach };
+})();
+
+/* =========================================================
+   SERVICE · ForecastService — Linear Regression
+   ========================================================= */
+const ForecastService = (() => {
+  // Least-squares slope and intercept
+  function fit(xs, ys) {
+    const n = xs.length;
+    const xb = xs.reduce((a,b)=>a+b,0) / n;
+    const yb = ys.reduce((a,b)=>a+b,0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) {
+      num += (xs[i] - xb) * (ys[i] - yb);
+      den += (xs[i] - xb) ** 2;
+    }
+    const m = den === 0 ? 0 : num / den;
+    const b = yb - m * xb;
+    return { m, b };
+  }
+
+  // จำลอง 6 เดือนย้อนหลังของยอดเงินคงเหลือสะสมจาก state ปัจจุบัน + เพิ่ม noise นิดนึง
+  function syntheticHistory(s) {
+    const base = s.cash;
+    const monthlyNet = s.saving;
+    const hist = [];
+    for (let i = -5; i <= 0; i++) {
+      const noise = (Math.sin(i * 1.7) * 0.04 + (Math.random() - 0.5) * 0.02) * Math.max(1000, base);
+      hist.push({ x: i, y: Math.max(0, base + monthlyNet * i + noise) });
+    }
+    return hist;
+  }
+
+  function project(s, monthsAhead = 12) {
+    const hist = syntheticHistory(s);
+    const { m, b } = fit(hist.map(p => p.x), hist.map(p => p.y));
+    const forecast = [];
+    for (let i = 1; i <= monthsAhead; i++) {
+      forecast.push({ x: i, y: Math.max(0, m * i + b) });
+    }
+    return { hist, forecast, m, b };
+  }
+
+  return { fit, syntheticHistory, project };
+})();
+
+/* =========================================================
+   SERVICE · ChartService — pure SVG renderers
+   ========================================================= */
+const ChartService = (() => {
+  const NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs = {}, children = []) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    children.forEach(c => n.appendChild(c));
+    return n;
+  }
+  function clear(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+
+  function doughnut(svgId, data, opts = {}) {
+    const svg = document.getElementById(svgId);
+    if (!svg) return;
+    clear(svg);
+    const cx = 160, cy = 160, R = 130, r = 78;
+    const total = data.reduce((a, d) => a + d.pct, 0) || 1;
+    let angle = -Math.PI / 2;
+
+    data.forEach(d => {
+      const slice = (d.pct / total) * Math.PI * 2;
+      const a2 = angle + slice;
+      const large = slice > Math.PI ? 1 : 0;
+      const x1 = cx + R * Math.cos(angle), y1 = cy + R * Math.sin(angle);
+      const x2 = cx + R * Math.cos(a2),    y2 = cy + R * Math.sin(a2);
+      const x3 = cx + r * Math.cos(a2),    y3 = cy + r * Math.sin(a2);
+      const x4 = cx + r * Math.cos(angle), y4 = cy + r * Math.sin(angle);
+      const path = `M ${x1} ${y1} A ${R} ${R} 0 ${large} 1 ${x2} ${y2} L ${x3} ${y3} A ${r} ${r} 0 ${large} 0 ${x4} ${y4} Z`;
+      svg.appendChild(el('path', { d: path, fill: d.color, stroke: '#0a0e0a', 'stroke-width': 1 }));
+      angle = a2;
+    });
+
+    if (opts.centerLabel) {
+      svg.appendChild(el('text', {
+        x: cx, y: cy - 4, 'text-anchor': 'middle',
+        'font-family': 'JetBrains Mono, monospace', 'font-size': 10,
+        fill: '#8a8674', 'letter-spacing': '0.15em'
+      })).appendChild(document.createTextNode(opts.centerLabel.toUpperCase()));
+    }
+    if (opts.centerValue) {
+      svg.appendChild(el('text', {
+        x: cx, y: cy + 18, 'text-anchor': 'middle',
+        'font-family': 'Fraunces, serif', 'font-size': 28,
+        'font-weight': 800, fill: '#0a0e0a'
+      })).appendChild(document.createTextNode(opts.centerValue));
+    }
+  }
+
+  function legend(containerId, data) {
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    c.innerHTML = data.map(d =>
+      `<span><span class="legend-dot" style="background:${d.color};"></span>${d.label} · ${d.pct.toFixed(1)}%</span>`
+    ).join('');
+  }
+
+  // Area chart with grid + optional second series
+  function area(svgId, series, opts = {}) {
+    const svg = document.getElementById(svgId);
+    if (!svg) return;
+    clear(svg);
+    const w = 720, h = 280;
+    const padL = 50, padR = 16, padT = 12, padB = 32;
+    const pw = w - padL - padR, ph = h - padT - padB;
+    if (series.length === 0) return;
+
+    const ys = series.map(p => p.y);
+    const ymax = opts.yMax ?? ((Math.max(...ys) * 1.1) || 1);
+    const ymin = 0;
+    const xmin = series[0].x, xmax = series[series.length - 1].x;
+
+    const sx = x => padL + ((x - xmin) / (xmax - xmin || 1)) * pw;
+    const sy = y => padT + ph - ((y - ymin) / (ymax - ymin)) * ph;
+
+    // grid lines
+    for (let i = 0; i <= 4; i++) {
+      const y = padT + (ph / 4) * i;
+      svg.appendChild(el('line', { x1: padL, y1: y, x2: w - padR, y2: y, stroke: '#0a0e0a', 'stroke-opacity': 0.1, 'stroke-width': 0.8 }));
+      const val = ymax - (ymax / 4) * i;
+      const t = el('text', { x: padL - 8, y: y + 4, 'text-anchor': 'end',
+                             'font-family': 'JetBrains Mono, monospace', 'font-size': 9, fill: '#8a8674' });
+      t.appendChild(document.createTextNode(formatShort(val)));
+      svg.appendChild(t);
+    }
+
+    // area path
+    let d = `M ${sx(series[0].x)} ${sy(0)} `;
+    series.forEach(p => { d += `L ${sx(p.x)} ${sy(p.y)} `; });
+    d += `L ${sx(series[series.length-1].x)} ${sy(0)} Z`;
+    svg.appendChild(el('path', { d, fill: opts.fill || 'rgba(45,74,43,0.25)' }));
+
+    // line
+    let dl = `M ${sx(series[0].x)} ${sy(series[0].y)} `;
+    series.forEach((p, i) => { if (i) dl += `L ${sx(p.x)} ${sy(p.y)} `; });
+    svg.appendChild(el('path', { d: dl, fill: 'none', stroke: opts.stroke || '#2d4a2b', 'stroke-width': 2.5 }));
+
+    // current marker
+    if (opts.markerAt != null) {
+      const p = series.find(s => s.x === opts.markerAt);
+      if (p) svg.appendChild(el('circle', { cx: sx(p.x), cy: sy(p.y), r: 5, fill: '#d49b3f', stroke: '#0a0e0a', 'stroke-width': 1.5 }));
+    }
+
+    // x ticks
+    const tickStep = Math.max(1, Math.round((xmax - xmin) / 6));
+    for (let x = xmin; x <= xmax; x += tickStep) {
+      const t = el('text', { x: sx(x), y: h - 10, 'text-anchor': 'middle',
+                             'font-family': 'JetBrains Mono, monospace', 'font-size': 9, fill: '#8a8674' });
+      t.appendChild(document.createTextNode(opts.xLabel ? opts.xLabel(x) : String(x)));
+      svg.appendChild(t);
+    }
+  }
+
+  function formatShort(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(0) + 'k';
+    return Math.round(n).toString();
+  }
+
+  return { doughnut, legend, area, formatShort };
+})();
+
+/* =========================================================
+   SERVICE · OCRService — Tesseract.js + regex parser
+   ========================================================= */
+const OCRService = (() => {
+  async function recognize(file, onProgress) {
+    if (typeof Tesseract === 'undefined') throw new Error('Tesseract.js ยังโหลดไม่เสร็จ — รีเฟรชสักครู่');
+    const res = await Tesseract.recognize(file, 'eng+tha', {
+      logger: m => onProgress && onProgress(m)
+    });
+    return res.data.text || '';
+  }
+
+  function parse(rawText) {
+    const text = rawText.replace(/ /g, ' ');
+    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+
+    // Total: prefer lines containing total/รวม/grand
+    const totalRx = /(total|รวมทั้งสิ้น|รวมสุทธิ|grand\s*total|amount|ยอดสุทธิ|รวม)\s*[:\-]?\s*([฿\$]?\s*[\d,]+\.?\d{0,2})/i;
+    let total = null;
+    for (const ln of lines) {
+      const m = ln.match(totalRx);
+      if (m) {
+        const n = parseFloat(m[2].replace(/[฿\$,\s]/g, ''));
+        if (!isNaN(n)) { total = n; break; }
+      }
+    }
+    // Fallback: largest numeric in last 6 lines
+    if (total === null) {
+      const candidates = [];
+      lines.slice(-8).forEach(ln => {
+        (ln.match(/[\d,]+\.\d{2}/g) || []).forEach(s => {
+          const n = parseFloat(s.replace(/,/g, ''));
+          if (!isNaN(n)) candidates.push(n);
+        });
+      });
+      if (candidates.length) total = Math.max(...candidates);
+    }
+
+    // Date
+    const dateRx = /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})|(\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/;
+    let date = null;
+    for (const ln of lines) { const m = ln.match(dateRx); if (m) { date = m[0]; break; } }
+
+    // Merchant: first 1-2 non-numeric lines
+    let merchant = null;
+    for (const ln of lines) {
+      if (ln.length < 3) continue;
+      if (/^[\d\s\W]+$/.test(ln)) continue;
+      merchant = ln; break;
+    }
+
+    // Category guess
+    const cat = guessCategory((merchant || '') + ' ' + text);
+
+    return { merchant, date, total, category: cat };
+  }
+
+  function guessCategory(t) {
+    const s = t.toLowerCase();
+    if (/(starbucks|amazon|coffee|กาแฟ|cafe)/.test(s)) return 'อาหาร/เครื่องดื่ม';
+    if (/(7-?eleven|7 11|seveneleven|lotus|big c|tops|makro|family ?mart|ซุปเปอร์|tesco)/.test(s)) return 'ซูเปอร์มาเก็ต';
+    if (/(grab|bolt|uber|taxi|รถไฟ|bts|mrt|fuel|ปั๊ม|esso|shell|ptt)/.test(s)) return 'เดินทาง';
+    if (/(uniqlo|h&m|zara|เสื้อผ้า)/.test(s)) return 'เสื้อผ้า';
+    if (/(โรงพยาบาล|hospital|pharmacy|ร้านขายยา|clinic)/.test(s)) return 'สุขภาพ';
+    if (/(netflix|spotify|youtube|disney|hbo)/.test(s)) return 'สมัครสมาชิก';
+    return 'อื่นๆ';
+  }
+
+  return { recognize, parse };
+})();
+
+/* =========================================================
+   SERVICE · AIService — rule-based contextual advisor
+   (LLM-ready: replace `advise()` body to call OpenAI / Nebius)
+   ========================================================= */
+const AIService = (() => {
+  function advise(state, ratios, scores, total, forecast) {
+    if (FinanceService.isEmpty(state)) {
+      return {
+        text: `<em>รอข้อมูลของคุณ...</em> ระบบจะวิเคราะห์จุดอ่อนที่สุดและพยากรณ์กระแสเงินสด 12 เดือนข้างหน้าหลังกรอกข้อมูล`,
+        forecastChip: null
+      };
+    }
+
+    const pts = [
+      { key: 'emergency', score: scores.emergency, name: 'กองทุนฉุกเฉิน' },
+      { key: 'saving',    score: scores.saving,    name: 'การออม' },
+      { key: 'debt',      score: scores.debt,      name: 'ภาระหนี้' },
+      { key: 'invest',    score: scores.invest,    name: 'การลงทุน' }
+    ].sort((a, b) => a.score - b.score);
+    const weakest = pts[0];
+
+    let advice = '';
+    const fmt = n => Math.round(n).toLocaleString('th-TH');
+
+    if (weakest.key === 'emergency') {
+      const target = state.expense * 6;
+      const gap = target - state.cash;
+      if (gap > 0) {
+        const m12 = gap / 12;
+        advice = `จุดที่น่ากังวลที่สุดคือ <em>กองทุนฉุกเฉินขาด ${(6 - ratios.emergencyMonths).toFixed(1)} เดือน</em> — แนะนำเก็บเพิ่ม <em>${fmt(m12)} บาท/เดือน</em> ในกองทุนรวมตลาดเงิน จะถึงเป้าใน 12 เดือน`;
+      } else {
+        advice = `กองทุนฉุกเฉินพอแล้ว ${ratios.emergencyMonths.toFixed(1)} เดือน · จุดอ่อนถัดมาคือ <em>สัดส่วนเงินลงทุน ${ratios.investmentRatio.toFixed(0)}%</em> เริ่ม DCA ดัชนีต่างประเทศได้`;
+      }
+    } else if (weakest.key === 'saving') {
+      const tgt = state.income * 0.20;
+      const add = tgt - state.saving;
+      advice = `อัตราการออม <em>${ratios.savingsRate.toFixed(1)}%</em> ต่ำกว่าเกณฑ์ 20% — เพิ่มอีก <em>${fmt(add)} บาท/เดือน</em> โดยตัดค่าใช้จ่ายฟุ่มเฟือยที่กินเงินซ้ำ ๆ`;
+    } else if (weakest.key === 'debt') {
+      advice = `ภาระหนี้สูง <em>${ratios.debtToIncome.toFixed(0)}%</em> เกินเกณฑ์ 40% — โปะหนี้ดอกเบี้ยสูงก่อน (บัตรเครดิต → สินเชื่อส่วนบุคคล → บ้าน) และระงับการก่อหนี้ใหม่ทันที`;
     } else {
-      advice = `กองทุนฉุกเฉินของคุณเพียงพอแล้ว ${r.emergencyMonths.toFixed(1)} เดือน ถือว่าปลอดภัย แต่ <em>สัดส่วนเงินลงทุนยังต่ำ ${r.investmentRatio.toFixed(0)}%</em> เงินจมในบัญชีเยอะ แนะนำเริ่ม DCA ดัชนีต่างประเทศ`;
+      advice = `<em>สัดส่วนเงินลงทุน ${ratios.investmentRatio.toFixed(0)}%</em> ยังต่ำ — เริ่ม DCA กองทุนดัชนี <em>${fmt(state.income * 0.10)} บาท/เดือน</em> เพื่อ compound growth`;
     }
-  } else if (weakest.key === 'saving') {
-    const targetSave = state.income * 0.20;
-    const addSave = targetSave - state.saving;
-    advice = `อัตราการออมของคุณยังต่ำ <em>${r.savingsRate.toFixed(1)}%</em> ต่ำกว่าเกณฑ์ 20% แนะนำเพิ่มเงินออม <em>${fmtMoney(addSave)} บาท/เดือน</em> ลองตัดค่าใช้จ่ายฟุ่มเฟือย เช่น การกินข้าวนอกบ้าน หรือบริการสมัครสมาชิกที่ไม่ได้ใช้`;
-  } else if (weakest.key === 'debt') {
-    advice = `ภาระหนี้สูงเกินไป <em>${r.debtToIncome.toFixed(0)}% ของรายได้</em> เกินเกณฑ์ 40% ที่ปลอดภัย ควรเร่งโปะหนี้ดอกเบี้ยสูงก่อน (บัตรเครดิต > สินเชื่อส่วนบุคคล > บ้าน) และระงับการก่อหนี้ใหม่ทันที`;
-  } else {
-    advice = `สัดส่วนเงินลงทุนยังต่ำเพียง <em>${r.investmentRatio.toFixed(0)}%</em> เงินจมในบัญชีออมทรัพย์เยอะเกินไป กำลังถูกเงินเฟ้อกินทุกปี แนะนำเริ่ม DCA กองทุนดัชนี <em>${fmtMoney(state.income * 0.10)} บาท/เดือน</em> เพื่อสร้าง compound growth ระยะยาว`;
+
+    // Forecast chip: 12-month-ahead net cash projection
+    let chip = null;
+    if (forecast) {
+      const last = forecast.forecast[forecast.forecast.length - 1];
+      const trend = forecast.m >= 0 ? '▲' : '▼';
+      chip = `${trend} พยากรณ์ 12 เดือนข้างหน้า · ${fmt(last.y)} บาท (slope ${fmt(forecast.m)}/เดือน)`;
+    }
+
+    return { text: advice, forecastChip: chip };
   }
-  
-  document.getElementById('adviceContent').innerHTML = advice;
-}
 
-// ========== MATH PAGE LIVE ==========
-function updateMathPage(r, sc, total) {
-  if (isEmpty()) {
-    const waiting = 'รอข้อมูลจากแท็บ Dashboard...';
-    document.getElementById('liveRatios').textContent = waiting;
-    document.getElementById('liveScores').textContent = waiting;
-    document.getElementById('liveWeighted').textContent = waiting;
-    document.getElementById('liveFV').textContent = waiting;
-    document.getElementById('liveZ').textContent = waiting;
-    return;
+  function rebalanceSuggestion(state) {
+    if (FinanceService.isEmpty(state)) return '<em>กรอกข้อมูลก่อน ระบบจะแนะนำการ rebalance ที่นี่</em>';
+    const total = state.cash + state.invest + state.other || 1;
+    const cashPct  = (state.cash  / total) * 100;
+    const invPct   = (state.invest/ total) * 100;
+    const otherPct = (state.other / total) * 100;
+
+    let lines = [`ตอนนี้ · เงินสด ${cashPct.toFixed(1)}% / ลงทุน ${invPct.toFixed(1)}% / อื่นๆ ${otherPct.toFixed(1)}%`];
+    if (cashPct > 25) lines.push(`<em>เงินสดสูงไป</em> — แนะนำโยกเข้าหุ้น/พันธบัตรเพื่อสู้เงินเฟ้อ`);
+    if (invPct < 30)  lines.push(`<em>เงินลงทุนน้อย</em> — ขั้นต่ำ 30% (DCA หุ้นโลก/ETF ทุกเดือน)`);
+    if (otherPct > 60) lines.push(`<em>สินทรัพย์ไม่สภาพคล่อง (บ้าน/รถ) เยอะ</em> — รักษากองทุนฉุกเฉินให้ครบ 6 เดือนก่อน`);
+    if (lines.length === 1) lines.push(`พอร์ตสมดุลดี · ทำต่อเนื่อง + rebalance ปีละครั้ง`);
+    return lines.join('<br>');
   }
-  
-  // 01 - Ratios
-  document.getElementById('liveRatios').innerHTML = 
-    `savings_rate     = ${r.savingsRate.toFixed(2)}%<br>` +
-    `emergency_months = ${r.emergencyMonths.toFixed(2)} เดือน<br>` +
-    `debt_to_income   = ${r.debtToIncome.toFixed(2)}%<br>` +
-    `investment_ratio = ${r.investmentRatio.toFixed(2)}%`;
-  
-  // 02 - Scores
-  document.getElementById('liveScores').innerHTML = 
-    `f(ออม)     = ${sc.saving.toFixed(1)} / 100<br>` +
-    `f(ฉุกเฉิน) = ${sc.emergency.toFixed(1)} / 100<br>` +
-    `f(หนี้)    = ${sc.debt.toFixed(1)} / 100<br>` +
-    `f(ลงทุน)   = ${sc.invest.toFixed(1)} / 100`;
-  
-  // 03 - Weighted
-  const w = `${sc.saving.toFixed(1)}×0.25 + ${sc.emergency.toFixed(1)}×0.30 + ${sc.debt.toFixed(1)}×0.25 + ${sc.invest.toFixed(1)}×0.20`;
-  document.getElementById('liveWeighted').innerHTML = 
-    `= ${w}<br>= <strong>${total.toFixed(2)} / 100</strong>`;
-  
-  // 04 - FV
-  const target = state.expense * 6;
-  const gap = Math.max(0, target - state.cash);
-  if (gap > 0 && state.saving > 0) {
-    const months = monthsToTarget(gap, state.saving);
-    document.getElementById('liveFV').innerHTML = 
-      `เป้าหมาย = ${fmtMoney(target)} · ขาด ${fmtMoney(gap)}<br>` +
-      `PMT = ${fmtMoney(state.saving)}/เดือน · r = 1.5%/ปี<br>` +
-      `n = log(1 + ${fmtMoney(gap)}×0.00125/${fmtMoney(state.saving)}) / log(1.00125)<br>` +
-      `= <strong>${months.toFixed(1)} เดือน</strong> (≈ ${(months/12).toFixed(1)} ปี)`;
-  } else {
-    document.getElementById('liveFV').innerHTML = 
-      `กองทุนฉุกเฉินของคุณเพียงพอแล้ว ไม่ต้องคำนวณเพิ่ม`;
+
+  return { advise, rebalanceSuggestion };
+})();
+
+/* =========================================================
+   SERVICE · GamificationService — Streaks / Badges / Progress
+   ========================================================= */
+const GamificationService = (() => {
+  const KEY = 'finpulse_gami_v1';
+  const BADGES = [
+    { id: 'starter',   icon: 'S', label: 'นักวางแผนรุ่นใหม่',  test: s => s.income > 0 && s.expense > 0 },
+    { id: 'saver',     icon: '$', label: 'นักออมตัวยง',         test: (s, r) => r.savingsRate >= 20 },
+    { id: 'safe',      icon: '⛨', label: 'มีเกราะกองทุนฉุกเฉิน', test: (s, r) => r.emergencyMonths >= 6 },
+    { id: 'investor',  icon: 'I', label: 'นักลงทุนรุ่นเยาว์',   test: (s, r) => r.investmentRatio >= 30 },
+    { id: 'debt_free', icon: '✓', label: 'ผู้ควบคุมหนี้สิน',   test: (s, r) => r.debtToIncome <= 20 && s.income > 0 },
+    { id: 'streak7',   icon: '7', label: 'บันทึก 7 วันติด',     test: (s, r, g) => g.streak >= 7 }
+  ];
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || { streak: 0, lastDay: null, earned: [] }; }
+    catch { return { streak: 0, lastDay: null, earned: [] }; }
   }
-  
-  // 05 - Z-score
-  const mu = 15, sigma = 8;
-  const z = (r.savingsRate - mu) / sigma;
-  let zDesc = '';
-  if (z >= 2) zDesc = 'อยู่ใน top 2.5% ของคนวัย 30 — เก่งมาก';
-  else if (z >= 1) zDesc = 'อยู่ใน top 16% ดีกว่าค่าเฉลี่ยอย่างชัดเจน';
-  else if (z >= 0) zDesc = 'ดีกว่าค่าเฉลี่ยเล็กน้อย';
-  else if (z >= -1) zDesc = 'ต่ำกว่าค่าเฉลี่ย ควรปรับ';
-  else zDesc = 'ต่ำกว่าค่าเฉลี่ยมาก ต้องเร่งปรับ';
-  
-  document.getElementById('liveZ').innerHTML = 
-    `z = (${r.savingsRate.toFixed(1)} - 15) / 8 = <strong>${z.toFixed(2)}</strong><br>${zDesc}`;
-}
+  function save(g) { try { localStorage.setItem(KEY, JSON.stringify(g)); } catch {} }
 
-// ========== MAIN UPDATE ==========
-function update() {
-  const r = calcRatios(state);
-  const sc = calcScores(r);
-  const total = weightedScore(sc);
-  
-  renderMetrics(r, sc);
-  updateRadar(sc);
-  updateScore(total, r);
-  generateAdvice(r, sc);
-  updateMathPage(r, sc, total);
-  
-  return { r, sc, total };
-}
-
-// ========== INPUT BINDING ==========
-['income','expense','saving','cash','invest','other','debt'].forEach(key => {
-  const el = document.getElementById(key);
-  el.addEventListener('input', () => {
-    state[key] = parseFloat(el.value) || 0;
-    update();
-  });
-});
-
-// ========== TABS ==========
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(tab.dataset.page).classList.add('active');
-  });
-});
-
-// ========== SIMULATOR ==========
-function updateSim() {
-  const cut = parseFloat(document.getElementById('simCut').value);
-  const save = parseFloat(document.getElementById('simSave').value);
-  const inv = parseFloat(document.getElementById('simInvest').value);
-  const debtPay = parseFloat(document.getElementById('simDebt').value);
-  
-  document.getElementById('simCutVal').textContent = fmtMoney(cut) + ' บาท';
-  document.getElementById('simSaveVal').textContent = fmtMoney(save) + ' บาท';
-  document.getElementById('simInvestVal').textContent = fmtMoney(inv) + ' บาท';
-  document.getElementById('simDebtVal').textContent = fmtMoney(debtPay) + ' บาท';
-  
-  const newState = {
-    ...state,
-    expense: Math.max(0, state.expense - cut),
-    saving: state.saving + save,
-    cash: Math.max(0, state.cash - inv - debtPay),
-    invest: state.invest + inv,
-    debt: Math.max(0, state.debt - debtPay)
-  };
-  
-  const r = calcRatios(newState);
-  const sc = calcScores(r);
-  const newTotal = weightedScore(sc);
-  
-  const oldTotal = weightedScore(calcScores(calcRatios(state)));
-  const delta = newTotal - oldTotal;
-  
-  document.getElementById('simScore').textContent = `${Math.round(newTotal)}/100`;
-  
-  let detailEl = document.getElementById('simDelta');
-  if (Math.abs(delta) < 0.5) {
-    detailEl.textContent = 'ยังไม่ได้ปรับ — เลื่อน slider ด้านบน';
-    detailEl.style.color = '';
-  } else if (delta > 0) {
-    detailEl.innerHTML = `▲ คะแนนเพิ่มขึ้น <strong>+${delta.toFixed(1)}</strong> จาก ${oldTotal.toFixed(0)}`;
-    detailEl.style.color = '#d49b3f';
-  } else {
-    detailEl.innerHTML = `▼ คะแนนลดลง <strong>${delta.toFixed(1)}</strong> จาก ${oldTotal.toFixed(0)}`;
-    detailEl.style.color = '#c1502e';
+  function tick() {
+    const g = load();
+    const today = new Date().toISOString().slice(0, 10);
+    if (g.lastDay === today) return g;
+    const yest = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
+    g.streak = g.lastDay === yest ? (g.streak + 1) : 1;
+    g.lastDay = today;
+    save(g);
+    return g;
   }
-}
 
-['simCut','simSave','simInvest','simDebt'].forEach(id => {
-  document.getElementById(id).addEventListener('input', updateSim);
-});
+  function evaluate(state, ratios) {
+    const g = load();
+    BADGES.forEach(b => {
+      if (!g.earned.includes(b.id) && b.test(state, ratios, g)) g.earned.push(b.id);
+    });
+    save(g);
+    return g;
+  }
 
-// ========== INIT ==========
-update();
-updateSim();
+  function goalProgress(state) {
+    const target = state.expense * 6;
+    if (target <= 0) return { pct: 0, label: 'เป้าหมายกองทุนฉุกเฉิน', detail: 'ยังไม่ได้กรอกรายจ่าย' };
+    const pct = Math.min(100, (state.cash / target) * 100);
+    return {
+      pct,
+      label: 'เป้าหมายกองทุนฉุกเฉิน (6 เดือน)',
+      detail: `${Math.round(state.cash).toLocaleString('th-TH')} / ${Math.round(target).toLocaleString('th-TH')} บาท`
+    };
+  }
+
+  return { BADGES, load, tick, evaluate, goalProgress };
+})();
+
+/* =========================================================
+   UI CONTROLLER
+   ========================================================= */
+const UIController = (() => {
+  const $ = id => document.getElementById(id);
+  const fmtMoney = n => Math.round(n).toLocaleString('th-TH');
+
+  /* ---- METRICS GRID ---- */
+  function statusOf(score) {
+    if (score >= 75) return { card: '', badge: 'status-good', text: 'ดี' };
+    if (score >= 50) return { card: 'warning', badge: 'status-warn', text: 'ควรปรับ' };
+    return { card: 'danger', badge: 'status-bad', text: 'ต่ำเกิน' };
+  }
+
+  function renderMetrics(r, sc) {
+    const empty = FinanceService.isEmpty(state);
+    const items = [
+      { name: 'อัตราการออม',       formula: '= เงินออม ÷ รายได้ × 100',  value: empty ? '—' : r.savingsRate.toFixed(1),
+        unit: '%',     detail: empty ? 'รอข้อมูล' : `${fmtMoney(state.saving)} / ${fmtMoney(state.income)} บาท`,
+        score: sc.saving,    target: 'เป้าหมาย ≥ 20%' },
+      { name: 'กองทุนฉุกเฉิน',     formula: '= เงินสด ÷ รายจ่าย/เดือน', value: empty ? '—' : r.emergencyMonths.toFixed(1),
+        unit: 'เดือน', detail: empty ? 'รอข้อมูล' : `มี ${fmtMoney(state.cash)} · จ่าย ${fmtMoney(state.expense)}/เดือน`,
+        score: sc.emergency, target: 'เป้าหมาย ≥ 6 เดือน' },
+      { name: 'อัตราหนี้สิน',      formula: '= ภาระหนี้ ÷ รายได้ × 100', value: empty ? '—' : r.debtToIncome.toFixed(1),
+        unit: '%',     detail: empty ? 'รอข้อมูล' : `ผ่อน ${fmtMoney(state.debt)}/เดือน`,
+        score: sc.debt,      target: 'เป้าหมาย ≤ 40%' },
+      { name: 'สัดส่วนเงินลงทุน',  formula: '= ลงทุน ÷ ทรัพย์สินรวม × 100', value: empty ? '—' : r.investmentRatio.toFixed(1),
+        unit: '%',     detail: empty ? 'รอข้อมูล' : `ลงทุน ${fmtMoney(state.invest)} จาก ${fmtMoney(state.cash + state.invest + state.other)}`,
+        score: sc.invest,    target: 'เป้าหมาย ≥ 50%' }
+    ];
+    const palette = ['#2d4a2b', '#d49b3f', '#c1502e'];
+    $('metricsGrid').innerHTML = items.map(m => {
+      const st = empty ? { card: '', badge: '', text: '—' } : statusOf(m.score);
+      const color = empty ? '#8a8674' : (m.score >= 75 ? palette[0] : m.score >= 50 ? palette[1] : palette[2]);
+      const w = empty ? 0 : Math.min(m.score, 100);
+      const sText = empty ? '—' : `คะแนน ${m.score.toFixed(0)}/100`;
+      return `
+        <div class="metric-card ${st.card}">
+          <div class="metric-header">
+            <div>
+              <div class="metric-name">${m.name}</div>
+              <div class="metric-formula">${m.formula}</div>
+            </div>
+            <div class="metric-status ${st.badge}">${st.text}</div>
+          </div>
+          <div class="metric-value">${m.value}<span class="unit"> ${m.unit}</span></div>
+          <div class="metric-unit">${m.detail}</div>
+          <div class="metric-bar">
+            <div class="metric-bar-fill" style="width:${w}%; background:${color};"></div>
+          </div>
+          <div class="metric-target">${m.target} · ${sText}</div>
+        </div>`;
+    }).join('');
+  }
+
+  /* ---- RADAR ---- */
+  function updateRadar(sc) {
+    const center = 200, maxR = 160;
+    const angles = [-90, -18, 54, 126, 198];
+    const expenseScore = state.income > 0
+      ? Math.max(0, 100 - ((state.expense / state.income) * 100)) : 0;
+    const scores = [sc.saving, sc.invest, sc.debt, sc.emergency, expenseScore];
+
+    const pts = angles.map((a, i) => {
+      const rad = a * Math.PI / 180;
+      const r = (scores[i] / 100) * maxR;
+      return [center + r * Math.cos(rad), center + r * Math.sin(rad)];
+    });
+    $('radarShape').setAttribute('points', pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' '));
+    const circles = $('radarPoints').querySelectorAll('circle');
+    pts.forEach((p, i) => { circles[i].setAttribute('cx', p[0].toFixed(1)); circles[i].setAttribute('cy', p[1].toFixed(1)); });
+  }
+
+  /* ---- SCORE DISPLAY ---- */
+  function updateScore(total) {
+    const eNum = $('scoreNum'), eGrade = $('scoreGrade'), eDesc = $('scoreDesc');
+    if (FinanceService.isEmpty(state)) {
+      eNum.innerHTML = `—<sup>/100</sup>`; eNum.style.color = 'var(--muted)';
+      eGrade.textContent = '○ รอข้อมูล · WAITING';
+      eGrade.style.background = 'var(--muted)';
+      eDesc.textContent = 'กรอกข้อมูลทางการเงินของคุณในช่องด้านซ้าย ระบบจะคำนวณคะแนนสุขภาพการเงินทันทีที่กรอกครบ';
+      return;
+    }
+    eNum.innerHTML = `${Math.round(total)}<sup>/100</sup>`;
+    let grade, color, desc;
+    if (total >= 80)      { grade = '★★★ ดีมาก · EXCELLENT'; color = '#2d4a2b';
+                            desc = 'สถานะการเงินแข็งแกร่ง พร้อมรับมือเรื่องไม่คาดฝัน และสร้างความมั่งคั่งระยะยาวได้'; }
+    else if (total >= 65) { grade = '★★ ค่อนข้างดี · STABLE'; color = '#2d4a2b';
+                            desc = 'สถานะการเงินอยู่ในเกณฑ์ดี มีฐานมั่นคง แต่ยังมีจุดที่ปรับให้ดียิ่งขึ้นได้'; }
+    else if (total >= 50) { grade = '★ พอใช้ · NEEDS WORK';  color = '#d49b3f';
+                            desc = 'ฐานพอใช้ได้ แต่มีหลายจุดอ่อนที่ต้องเร่งแก้ โดยเฉพาะถ้าเจอเหตุไม่คาดฝัน'; }
+    else                  { grade = '⚠ เสี่ยง · CRITICAL';   color = '#c1502e';
+                            desc = 'สถานะการเงินอยู่ในจุดเสี่ยง ต้องปรับโครงสร้างใหม่ — เริ่มจากกองทุนฉุกเฉินและลดรายจ่าย'; }
+    eNum.style.color = color;
+    eGrade.textContent = grade;
+    eGrade.style.background = color;
+    eDesc.textContent = desc;
+  }
+
+  /* ---- MATH PAGE LIVE ---- */
+  function updateMathPage(r, sc, total, forecast) {
+    const empty = FinanceService.isEmpty(state);
+    if (empty) {
+      const w = 'รอข้อมูลจากแท็บ Dashboard...';
+      ['liveRatios','liveScores','liveWeighted','liveFV','liveZ','liveLR'].forEach(id => $(id).textContent = w);
+      return;
+    }
+    $('liveRatios').innerHTML =
+      `savings_rate     = ${r.savingsRate.toFixed(2)}%<br>` +
+      `emergency_months = ${r.emergencyMonths.toFixed(2)} เดือน<br>` +
+      `debt_to_income   = ${r.debtToIncome.toFixed(2)}%<br>` +
+      `investment_ratio = ${r.investmentRatio.toFixed(2)}%`;
+
+    $('liveScores').innerHTML =
+      `f(ออม)     = ${sc.saving.toFixed(1)} / 100<br>` +
+      `f(ฉุกเฉิน) = ${sc.emergency.toFixed(1)} / 100<br>` +
+      `f(หนี้)    = ${sc.debt.toFixed(1)} / 100<br>` +
+      `f(ลงทุน)   = ${sc.invest.toFixed(1)} / 100`;
+
+    const expr = `${sc.saving.toFixed(1)}×0.25 + ${sc.emergency.toFixed(1)}×0.30 + ${sc.debt.toFixed(1)}×0.25 + ${sc.invest.toFixed(1)}×0.20`;
+    $('liveWeighted').innerHTML = `= ${expr}<br>= <strong>${total.toFixed(2)} / 100</strong>`;
+
+    const tgt = state.expense * 6;
+    const gap = Math.max(0, tgt - state.cash);
+    if (gap > 0 && state.saving > 0) {
+      const months = FinanceService.monthsToTarget(gap, state.saving);
+      $('liveFV').innerHTML =
+        `เป้าหมาย = ${fmtMoney(tgt)} · ขาด ${fmtMoney(gap)}<br>` +
+        `PMT = ${fmtMoney(state.saving)}/เดือน · r = 1.5%/ปี<br>` +
+        `= <strong>${months.toFixed(1)} เดือน</strong> (≈ ${(months/12).toFixed(1)} ปี)`;
+    } else {
+      $('liveFV').innerHTML = `กองทุนฉุกเฉินของคุณเพียงพอแล้ว ไม่ต้องคำนวณเพิ่ม`;
+    }
+
+    const mu = 15, sigma = 8;
+    const z = (r.savingsRate - mu) / sigma;
+    const zDesc = z >= 2 ? 'อยู่ใน top 2.5% — เก่งมาก'
+                : z >= 1 ? 'อยู่ใน top 16% ดีกว่าค่าเฉลี่ยอย่างชัดเจน'
+                : z >= 0 ? 'ดีกว่าค่าเฉลี่ยเล็กน้อย'
+                : z >= -1 ? 'ต่ำกว่าค่าเฉลี่ย ควรปรับ'
+                : 'ต่ำกว่าค่าเฉลี่ยมาก ต้องเร่งปรับ';
+    $('liveZ').innerHTML = `z = (${r.savingsRate.toFixed(1)} - 15) / 8 = <strong>${z.toFixed(2)}</strong><br>${zDesc}`;
+
+    // Linear Regression
+    const last = forecast.forecast[forecast.forecast.length - 1];
+    $('liveLR').innerHTML =
+      `slope (m) = ${fmtMoney(forecast.m)} บาท/เดือน · intercept (b) = ${fmtMoney(forecast.b)}<br>` +
+      `ŷ(t+12) = ${fmtMoney(forecast.m)}·12 + ${fmtMoney(forecast.b)}<br>` +
+      `      ≈ <strong>${fmtMoney(last.y)} บาท</strong>`;
+  }
+
+  /* ---- ADVICE + FORECAST CHIP ---- */
+  function renderAdvice(r, sc, total, forecast) {
+    const result = AIService.advise(state, r, sc, total, forecast);
+    $('adviceContent').innerHTML = result.text;
+    const chip = $('forecastChip');
+    if (result.forecastChip) { chip.textContent = result.forecastChip; chip.style.display = 'inline-block'; }
+    else                     { chip.style.display = 'none'; }
+  }
+
+  /* ---- CHARTS PAGE ---- */
+  function renderCharts(forecast) {
+    // Doughnut: recommended allocation
+    ChartService.doughnut('doughnut', RECOMMENDED_ALLOCATION, { centerLabel: '2025', centerValue: '100%' });
+    ChartService.legend('doughnutLegend', RECOMMENDED_ALLOCATION);
+
+    // User doughnut
+    const total = state.cash + state.invest + state.other;
+    let userData;
+    if (total <= 0) {
+      userData = [{ label: 'รอข้อมูล', pct: 100, color: '#8a8674' }];
+    } else {
+      userData = [
+        { label: 'เงินสด/ฝาก',    pct: (state.cash  / total) * 100, color: '#d49b3f' },
+        { label: 'ลงทุน',         pct: (state.invest/ total) * 100, color: '#2d4a2b' },
+        { label: 'อื่นๆ (บ้าน/รถ)', pct: (state.other / total) * 100, color: '#c1502e' }
+      ];
+    }
+    ChartService.doughnut('doughnutUser', userData, { centerLabel: 'คุณ', centerValue: total > 0 ? ChartService.formatShort(total) : '—' });
+    ChartService.legend('doughnutUserLegend', userData);
+    $('aiRebalance').innerHTML = AIService.rebalanceSuggestion(state);
+
+    // Net worth area chart — 10y projection
+    const netWorth = state.cash + state.invest + state.other - 0;
+    const series = GoalsService.projectGrowth({
+      start: Math.max(0, netWorth),
+      monthlyContrib: Math.max(0, state.saving),
+      annualRatePct: 6,
+      years: 10,
+      stepMonths: 3
+    });
+    const xs = series.map(p => ({ x: p.month / 12, y: p.value }));
+    ChartService.area('netWorthArea', xs, {
+      stroke: '#2d4a2b', fill: 'rgba(45,74,43,0.22)',
+      markerAt: 0, xLabel: x => `${x.toFixed(0)}y`
+    });
+  }
+
+  /* ---- LIFE GOALS PAGE ---- */
+  function renderGoals() {
+    const im = +$('goalIncome').value;
+    const rate = +$('goalRate').value;
+    const contrib = +$('goalContrib').value;
+    const start = +$('goalStart').value;
+    $('goalIncomeVal').textContent  = fmtMoney(im) + ' บาท';
+    $('goalRateVal').textContent    = rate.toFixed(1) + '%';
+    $('goalContribVal').textContent = fmtMoney(contrib) + ' บาท';
+    $('goalStartVal').textContent   = fmtMoney(start) + ' บาท';
+
+    const P = GoalsService.principalForIncome(im, rate);
+    const years = GoalsService.yearsToReach(P, { start, monthlyContrib: contrib, annualRatePct: rate });
+    $('goalP').textContent     = fmtMoney(P);
+    $('goalYears').textContent = isFinite(years) ? years.toFixed(1) : '∞';
+
+    const projYears = Math.max(1, Math.min(50, Math.ceil(years || 30)));
+    const series = GoalsService.projectGrowth({ start, monthlyContrib: contrib, annualRatePct: rate, years: projYears, stepMonths: 1 });
+    const last = series[series.length - 1];
+    $('goalFV').textContent = fmtMoney(last.value);
+
+    // chart
+    const xs = series
+      .filter((_, i) => i % Math.max(1, Math.round(series.length / 60)) === 0)
+      .map(p => ({ x: p.month / 12, y: p.value }));
+    // overlay target line
+    ChartService.area('goalChart', xs, {
+      stroke: '#2d4a2b', fill: 'rgba(45,74,43,0.22)',
+      yMax: Math.max(last.value, P) * 1.1,
+      xLabel: x => `${x.toFixed(0)}y`
+    });
+    // target hairline
+    const svg = document.getElementById('goalChart');
+    const ns = 'http://www.w3.org/2000/svg';
+    const w = 720, h = 280, padL = 50, padR = 16, padT = 12, padB = 32;
+    const ph = h - padT - padB;
+    const ymax = Math.max(last.value, P) * 1.1;
+    const targetY = padT + ph - (P / ymax) * ph;
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', padL); line.setAttribute('x2', w - padR);
+    line.setAttribute('y1', targetY); line.setAttribute('y2', targetY);
+    line.setAttribute('stroke', '#c1502e'); line.setAttribute('stroke-width', 1.5);
+    line.setAttribute('stroke-dasharray', '5 4');
+    svg.appendChild(line);
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', w - padR); t.setAttribute('y', targetY - 6);
+    t.setAttribute('text-anchor', 'end');
+    t.setAttribute('font-family', 'JetBrains Mono, monospace');
+    t.setAttribute('font-size', 10); t.setAttribute('fill', '#c1502e');
+    t.appendChild(document.createTextNode(`P = ${fmtMoney(P)}`));
+    svg.appendChild(t);
+  }
+
+  /* ---- GAMIFICATION STRIP ---- */
+  function renderGami(ratios) {
+    const g = GamificationService.evaluate(state, ratios);
+    $('streakNum').textContent = g.streak;
+    const goal = GamificationService.goalProgress(state);
+    $('gamiGoalLabel').textContent = goal.label;
+    $('gamiGoalPct').textContent = goal.pct.toFixed(0) + '%';
+    $('gamiGoalFill').style.width = goal.pct + '%';
+
+    $('badgesRow').innerHTML = GamificationService.BADGES.map(b => {
+      const earned = g.earned.includes(b.id);
+      return `<div class="badge-chip ${earned ? 'earned' : ''}" data-tip="${b.label}">${b.icon}</div>`;
+    }).join('');
+  }
+
+  /* ---- MAIN UPDATE ---- */
+  function update() {
+    const r = FinanceService.calcRatios(state);
+    const sc = FinanceService.calcScores(r);
+    const total = FinanceService.weightedScore(sc);
+    const forecast = ForecastService.project(state, 12);
+
+    renderMetrics(r, sc);
+    updateRadar(sc);
+    updateScore(total);
+    renderAdvice(r, sc, total, forecast);
+    updateMathPage(r, sc, total, forecast);
+    renderCharts(forecast);
+    renderGami(r);
+  }
+
+  /* ---- BINDINGS ---- */
+  function bind() {
+    // input -> state
+    ['income','expense','saving','cash','invest','other','debt'].forEach(k => {
+      const el = $(k);
+      el.addEventListener('input', () => {
+        state[k] = parseFloat(el.value) || 0;
+        if (!FinanceService.isEmpty(state)) GamificationService.tick();
+        update();
+      });
+    });
+
+    // tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        $(tab.dataset.page).classList.add('active');
+      });
+    });
+
+    // simulator
+    function updateSim() {
+      const cut  = +$('simCut').value;
+      const save = +$('simSave').value;
+      const inv  = +$('simInvest').value;
+      const dp   = +$('simDebt').value;
+      $('simCutVal').textContent    = fmtMoney(cut)  + ' บาท';
+      $('simSaveVal').textContent   = fmtMoney(save) + ' บาท';
+      $('simInvestVal').textContent = fmtMoney(inv)  + ' บาท';
+      $('simDebtVal').textContent   = fmtMoney(dp)   + ' บาท';
+      if (FinanceService.isEmpty(state)) {
+        $('simScore').textContent = '—/100';
+        $('simDelta').textContent = 'กรอกข้อมูลใน Dashboard ก่อน';
+        return;
+      }
+      const ns = { ...state,
+        expense: Math.max(0, state.expense - cut),
+        saving:  state.saving + save,
+        cash:    Math.max(0, state.cash - inv - dp),
+        invest:  state.invest + inv,
+        debt:    Math.max(0, state.debt - dp)
+      };
+      const newTotal = FinanceService.weightedScore(FinanceService.calcScores(FinanceService.calcRatios(ns)));
+      const oldTotal = FinanceService.weightedScore(FinanceService.calcScores(FinanceService.calcRatios(state)));
+      const delta = newTotal - oldTotal;
+      $('simScore').textContent = `${Math.round(newTotal)}/100`;
+      const det = $('simDelta');
+      if (Math.abs(delta) < 0.5) { det.textContent = 'ยังไม่ได้ปรับ — เลื่อน slider ด้านบน'; det.style.color = ''; }
+      else if (delta > 0)         { det.innerHTML = `▲ คะแนนเพิ่มขึ้น <strong>+${delta.toFixed(1)}</strong> จาก ${oldTotal.toFixed(0)}`; det.style.color = '#d49b3f'; }
+      else                        { det.innerHTML = `▼ คะแนนลดลง <strong>${delta.toFixed(1)}</strong> จาก ${oldTotal.toFixed(0)}`; det.style.color = '#c1502e'; }
+    }
+    ['simCut','simSave','simInvest','simDebt'].forEach(id => $(id).addEventListener('input', updateSim));
+
+    // life goals
+    ['goalIncome','goalRate','goalContrib','goalStart'].forEach(id => $(id).addEventListener('input', renderGoals));
+
+    // OCR
+    const zone = $('ocrZone'), file = $('ocrFile');
+    zone.addEventListener('click', () => file.click());
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag');
+      if (e.dataTransfer.files[0]) handleReceipt(e.dataTransfer.files[0]);
+    });
+    file.addEventListener('change', e => { if (e.target.files[0]) handleReceipt(e.target.files[0]); });
+    $('ocrReset').addEventListener('click', resetOCR);
+    $('ocrApply').addEventListener('click', () => {
+      const t = +$('ocrTotal').dataset.value || 0;
+      if (t > 0) {
+        $('expense').value = (state.expense || 0) + t;
+        state.expense = state.expense + t;
+        update();
+        $('ocrStatus').textContent = '✓ เพิ่มเข้ารายจ่ายแล้ว';
+        $('ocrApply').disabled = true;
+      }
+    });
+  }
+
+  function resetOCR() {
+    $('ocrPreview').style.display = 'none';
+    $('ocrFile').value = '';
+    $('ocrMerchant').textContent = '—';
+    $('ocrDate').textContent = '—';
+    $('ocrTotal').textContent = '—';
+    $('ocrCategory').textContent = '—';
+    $('ocrText').textContent = '— ข้อความดิบจากภาพจะแสดงที่นี่ —';
+    $('ocrApply').disabled = true;
+    $('ocrTotal').dataset.value = '';
+  }
+
+  async function handleReceipt(f) {
+    $('ocrPreview').style.display = 'grid';
+    const url = URL.createObjectURL(f);
+    $('ocrImg').src = url;
+    $('ocrStatus').textContent = 'กำลังโหลด OCR...';
+    $('ocrApply').disabled = true;
+    try {
+      const text = await OCRService.recognize(f, m => {
+        if (m.status && m.progress != null) {
+          $('ocrStatus').textContent = `${m.status} ${(m.progress * 100).toFixed(0)}%`;
+        }
+      });
+      $('ocrText').textContent = text || '(ไม่พบข้อความ)';
+      const parsed = OCRService.parse(text || '');
+      $('ocrMerchant').textContent = parsed.merchant || '—';
+      $('ocrDate').textContent     = parsed.date || '—';
+      $('ocrTotal').textContent    = parsed.total != null ? fmtMoney(parsed.total) + ' บาท' : '—';
+      $('ocrTotal').dataset.value  = parsed.total != null ? parsed.total : '';
+      $('ocrCategory').textContent = parsed.category;
+      $('ocrApply').disabled = parsed.total == null;
+      $('ocrStatus').textContent = '✓ สำเร็จ · ตรวจสอบและกดปุ่มเพื่อเพิ่มเข้ารายจ่าย';
+    } catch (e) {
+      $('ocrStatus').textContent = '✗ ' + (e.message || 'OCR ล้มเหลว');
+    }
+  }
+
+  return { bind, update, renderGoals };
+})();
+
+/* =========================================================
+   INIT
+   ========================================================= */
+UIController.bind();
+UIController.update();
+UIController.renderGoals();
 </script>
 </body>
 </html>
