@@ -679,6 +679,84 @@ body::before {
   margin-bottom: 4px;
 }
 
+/* Variables-in-formula block */
+.math-vars {
+  background: var(--paper);
+  border: 1px dashed var(--ink);
+  padding: 12px 16px;
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 10px 0 14px;
+  color: var(--ink);
+}
+.math-vars b {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+  color: var(--rust);
+}
+.math-vars code {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--cream);
+  padding: 1px 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Investment breakdown (optional) */
+.invest-breakdown {
+  margin-top: -8px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: var(--cream);
+  border: 1px dashed var(--ink);
+}
+.invest-breakdown-toggle {
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--rust);
+  user-select: none;
+}
+.invest-breakdown-toggle::before { content: '+ '; font-weight: 700; }
+.invest-breakdown.open .invest-breakdown-toggle::before { content: '– '; }
+.invest-breakdown-content {
+  display: none;
+  margin-top: 10px;
+}
+.invest-breakdown.open .invest-breakdown-content { display: block; }
+.invest-breakdown-hint {
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  line-height: 1.55;
+}
+.invest-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.invest-grid .input-wrap input {
+  padding: 7px 32px 7px 10px;
+  font-size: 12px;
+}
+.invest-grid .input-suffix { font-size: 9px; right: 8px; }
+.invest-sum {
+  margin-top: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+.invest-sum.warn { color: var(--rust); }
+
 /* SIMULATOR */
 .sim-section { padding: 28px; margin-bottom: 32px; }
 
@@ -972,6 +1050,42 @@ body::before {
           </div>
         </div>
 
+        <div class="invest-breakdown" id="investBreakdown">
+          <div class="invest-breakdown-toggle" id="investBreakdownToggle">ระบุสัดส่วนการลงทุน (ไม่บังคับ)</div>
+          <div class="invest-breakdown-content">
+            <div class="invest-breakdown-hint">
+              กรอกเป็น % ของสินทรัพย์ลงทุน — รวมไม่ต้องเท่า 100 ก็ได้ ช่วยให้ AI วัดความเสี่ยงและให้คำแนะนำการ rebalance ได้แม่นยำขึ้น
+            </div>
+            <div class="invest-grid">
+              <div class="input-wrap">
+                <input type="number" id="invStocks" placeholder="หุ้น" min="0" max="100">
+                <span class="input-suffix">%</span>
+              </div>
+              <div class="input-wrap">
+                <input type="number" id="invFunds" placeholder="กองทุนรวม" min="0" max="100">
+                <span class="input-suffix">%</span>
+              </div>
+              <div class="input-wrap">
+                <input type="number" id="invBonds" placeholder="ตราสารหนี้" min="0" max="100">
+                <span class="input-suffix">%</span>
+              </div>
+              <div class="input-wrap">
+                <input type="number" id="invGold" placeholder="ทอง/โลหะ" min="0" max="100">
+                <span class="input-suffix">%</span>
+              </div>
+              <div class="input-wrap">
+                <input type="number" id="invCrypto" placeholder="คริปโต" min="0" max="100">
+                <span class="input-suffix">%</span>
+              </div>
+              <div class="input-wrap">
+                <input type="number" id="invOtherAsset" placeholder="อื่นๆ" min="0" max="100">
+                <span class="input-suffix">%</span>
+              </div>
+            </div>
+            <div class="invest-sum" id="investSum">รวม: 0%</div>
+          </div>
+        </div>
+
         <div class="input-group">
           <label>สินทรัพย์อื่น <span class="hint">(บ้าน รถ ฯลฯ)</span></label>
           <div class="input-wrap">
@@ -1186,6 +1300,16 @@ body::before {
       </div>
       <div class="math-body">หัวใจของระบบคือ 4 ratios มาตรฐานที่ธนาคารและนักวางแผนการเงินใช้กันทั่วโลก คำนวณตรงไปตรงมาด้วยการหารและคูณ 100</div>
       <div class="formula">savings_rate = (เงินออม ÷ รายได้) × 100<br>emergency_months = เงินสด ÷ รายจ่ายต่อเดือน<br>debt_to_income = ภาระหนี้ ÷ รายได้ × 100<br>investment_ratio = สินทรัพย์ลงทุน ÷ สินทรัพย์รวม × 100</div>
+      <div class="math-vars">
+        <b>ตัวแปรที่ใช้ในสูตร</b>
+        <code>รายได้</code> ← ช่อง "รายได้ต่อเดือน" ·
+        <code>รายจ่าย</code> ← ช่อง "รายจ่ายต่อเดือน" ·
+        <code>เงินออม</code> ← ช่อง "เงินออม/ฝาก ต่อเดือน" ·
+        <code>เงินสด</code> ← ช่อง "เงินสด/เงินฝาก รวม" ·
+        <code>สินทรัพย์ลงทุน</code> ← ช่อง "สินทรัพย์ลงทุน" ·
+        <code>สินทรัพย์รวม</code> = เงินสด + สินทรัพย์ลงทุน + สินทรัพย์อื่น ·
+        <code>ภาระหนี้</code> ← ช่อง "ภาระผ่อนหนี้ต่อเดือน"
+      </div>
       <div class="math-live">
         <span class="label">ผลคำนวณจากข้อมูลของคุณ</span>
         <div id="liveRatios">กำลังคำนวณ...</div>
@@ -1200,6 +1324,11 @@ body::before {
       </div>
       <div class="math-body">แต่ละ ratio มีเป้าหมายต่างกัน เราใช้ฟังก์ชันเป็นช่วงเพื่อแปลงทุก ratio ให้เป็นคะแนน 0-100 เปรียบเทียบกันได้</div>
       <div class="formula">          ⎧ 0                  ถ้า x ≤ 0<br>f(x) =   ⎨ 100·(x/0.20)        ถ้า 0 &lt; x ≤ 0.20<br>          ⎩ 100                ถ้า x &gt; 0.20</div>
+      <div class="math-vars">
+        <b>ตัวแปรที่ใช้ในสูตร</b>
+        <code>x</code> = ratio จากบล็อก 01 (savings_rate, emergency_months, debt_to_income หรือ investment_ratio) ·
+        เกณฑ์เป้าหมาย: ออม ≥ 20%, ฉุกเฉิน ≥ 6 เดือน, หนี้ ≤ 20%, ลงทุน ≥ 50%
+      </div>
       <div class="math-live">
         <span class="label">คะแนนแต่ละมิติของคุณ</span>
         <div id="liveScores">กำลังคำนวณ...</div>
@@ -1214,6 +1343,11 @@ body::before {
       </div>
       <div class="math-body">ไม่ใช่เอา 4 คะแนนมาเฉลี่ยตรงๆ แต่ใช้น้ำหนักต่างกันตามความสำคัญ</div>
       <div class="formula">Score = w₁·S_ออม + w₂·S_ฉุกเฉิน + w₃·S_หนี้ + w₄·S_ลงทุน<br><br>weights = [0.25, 0.30, 0.25, 0.20]</div>
+      <div class="math-vars">
+        <b>ตัวแปรที่ใช้ในสูตร</b>
+        <code>S_ออม / S_ฉุกเฉิน / S_หนี้ / S_ลงทุน</code> = 4 คะแนนจากบล็อก 02 ·
+        <code>w₁..w₄</code> = น้ำหนักคงที่ — กองทุนฉุกเฉินสำคัญสุด (0.30) เพราะเป็นเกราะกันชนแรก
+      </div>
       <div class="math-live">
         <span class="label">คะแนนรวมของคุณ</span>
         <div id="liveWeighted">กำลังคำนวณ...</div>
@@ -1228,6 +1362,13 @@ body::before {
       </div>
       <div class="math-body">คำแนะนำที่บอก "ต้องเก็บอีกกี่เดือนถึงเป้า" คำนวณจากสูตรเงินรายงวด</div>
       <div class="formula">FV = PMT × [((1+r)ⁿ - 1) / r]<br><br>หาจำนวนเดือน n เมื่อรู้ FV เป้าหมาย:<br>n = log(1 + FV·r/PMT) / log(1 + r)</div>
+      <div class="math-vars">
+        <b>ตัวแปรที่ใช้ในสูตร</b>
+        <code>FV</code> = เป้าหมาย (เช่น รายจ่าย × 6 = กองทุนฉุกเฉิน) ·
+        <code>PMT</code> ← ช่อง "เงินออม/ฝาก ต่อเดือน" ·
+        <code>r</code> = ดอกเบี้ยต่อเดือน (ใช้ 1.5%/ปี → 0.125%/เดือน) ·
+        <code>n</code> = จำนวนเดือนที่ต้องเก็บ
+      </div>
       <div class="math-live">
         <span class="label">เวลาถึงเป้ากองทุนฉุกเฉิน 6 เดือน</span>
         <div id="liveFV">กำลังคำนวณ...</div>
@@ -1242,6 +1383,13 @@ body::before {
       </div>
       <div class="math-body">สมมติคนวัย 30 ออมเฉลี่ย 15% (μ) ส่วนเบี่ยงเบน 8% (σ)</div>
       <div class="formula">z = (x - μ) / σ</div>
+      <div class="math-vars">
+        <b>ตัวแปรที่ใช้ในสูตร</b>
+        <code>x</code> = savings_rate ของคุณ (จากบล็อก 01) ·
+        <code>μ</code> = ค่าเฉลี่ย 15% ·
+        <code>σ</code> = ส่วนเบี่ยงเบน 8% ·
+        z &gt; 0 = ออมเก่งกว่าค่าเฉลี่ย, z &lt; 0 = ต่ำกว่า
+      </div>
       <div class="math-live">
         <span class="label">Z-score อัตราการออมของคุณ</span>
         <div id="liveZ">กำลังคำนวณ...</div>
@@ -1256,6 +1404,14 @@ body::before {
       </div>
       <div class="math-body">พยากรณ์เงินคงเหลือ 12 เดือนข้างหน้าด้วย Least-Squares Linear Regression จากประวัติเงินออมของคุณ (ระบบจำลอง series 6 เดือนย้อนหลังให้อัตโนมัติจากค่าที่กรอก)</div>
       <div class="formula">ŷ = m·x + b<br><br>m = Σ(xᵢ - x̄)(yᵢ - ȳ) / Σ(xᵢ - x̄)²<br>b = ȳ - m·x̄</div>
+      <div class="math-vars">
+        <b>ตัวแปรที่ใช้ในสูตร</b>
+        <code>xᵢ</code> = เดือนที่ -5..0 (ปัจจุบัน) ·
+        <code>yᵢ</code> = ยอดเงินคงเหลือสะสมในเดือนนั้น (เริ่มจาก "เงินสด" บวก "เงินออม" สะสมย้อนกลับ + noise เล็กน้อย) ·
+        <code>m</code> = ความชัน (เงินงอกเฉลี่ย/เดือน) ·
+        <code>b</code> = จุดตัดแกน y ·
+        <code>ŷ</code> = ค่าพยากรณ์ 12 เดือนข้างหน้า
+      </div>
       <div class="math-live">
         <span class="label">เส้นพยากรณ์</span>
         <div id="liveLR">กำลังคำนวณ...</div>
@@ -1323,8 +1479,19 @@ body::before {
 /* ----- STATE / STORE ----- */
 const state = {
   income: 0, expense: 0, saving: 0,
-  cash: 0, invest: 0, other: 0, debt: 0
+  cash: 0, invest: 0, other: 0, debt: 0,
+  // optional asset-allocation breakdown (% of invest)
+  invStocks: 0, invFunds: 0, invBonds: 0, invGold: 0, invCrypto: 0, invOtherAsset: 0
 };
+
+const INVEST_BREAKDOWN_FIELDS = [
+  { key: 'invStocks',     label: 'หุ้น',         color: '#2d4a2b', risk: 'high' },
+  { key: 'invFunds',      label: 'กองทุนรวม',   color: '#6b7a3a', risk: 'mid'  },
+  { key: 'invBonds',      label: 'ตราสารหนี้',  color: '#8a8674', risk: 'low'  },
+  { key: 'invGold',       label: 'ทอง',         color: '#d49b3f', risk: 'mid'  },
+  { key: 'invCrypto',     label: 'คริปโต',      color: '#c1502e', risk: 'high' },
+  { key: 'invOtherAsset', label: 'อื่นๆ',       color: '#3a3a30', risk: 'mid'  }
+];
 
 const RECOMMENDED_ALLOCATION = [
   { key: 'intl_stocks', label: 'หุ้นต่างประเทศ',  pct: 29.6, color: '#2d4a2b' },
@@ -1496,6 +1663,13 @@ const ChartService = (() => {
   }
   function clear(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
 
+  function isDark(hex) {
+    const h = hex.replace('#', '');
+    if (h.length !== 6) return false;
+    const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+    return (0.299*r + 0.587*g + 0.114*b) < 140;
+  }
+
   function doughnut(svgId, data, opts = {}) {
     const svg = document.getElementById(svgId);
     if (!svg) return;
@@ -1503,6 +1677,7 @@ const ChartService = (() => {
     const cx = 160, cy = 160, R = 130, r = 78;
     const total = data.reduce((a, d) => a + d.pct, 0) || 1;
     let angle = -Math.PI / 2;
+    const labels = [];
 
     data.forEach(d => {
       const slice = (d.pct / total) * Math.PI * 2;
@@ -1514,7 +1689,30 @@ const ChartService = (() => {
       const x4 = cx + r * Math.cos(angle), y4 = cy + r * Math.sin(angle);
       const path = `M ${x1} ${y1} A ${R} ${R} 0 ${large} 1 ${x2} ${y2} L ${x3} ${y3} A ${r} ${r} 0 ${large} 0 ${x4} ${y4} Z`;
       svg.appendChild(el('path', { d: path, fill: d.color, stroke: '#0a0e0a', 'stroke-width': 1 }));
+
+      const pct = (d.pct / total) * 100;
+      if (pct >= 4) {
+        const mid = angle + slice / 2;
+        const lr = (R + r) / 2;
+        labels.push({
+          x: cx + lr * Math.cos(mid),
+          y: cy + lr * Math.sin(mid),
+          text: pct.toFixed(0) + '%',
+          dark: isDark(d.color)
+        });
+      }
       angle = a2;
+    });
+
+    labels.forEach(l => {
+      const t = el('text', {
+        x: l.x, y: l.y + 4, 'text-anchor': 'middle',
+        'font-family': 'JetBrains Mono, monospace',
+        'font-size': 12, 'font-weight': 700,
+        fill: l.dark ? '#f4f1e8' : '#0a0e0a'
+      });
+      t.appendChild(document.createTextNode(l.text));
+      svg.appendChild(t);
     });
 
     if (opts.centerLabel) {
@@ -1586,6 +1784,26 @@ const ChartService = (() => {
       const p = series.find(s => s.x === opts.markerAt);
       if (p) svg.appendChild(el('circle', { cx: sx(p.x), cy: sy(p.y), r: 5, fill: '#d49b3f', stroke: '#0a0e0a', 'stroke-width': 1.5 }));
     }
+
+    // value labels on key points (start, end, max)
+    const last = series[series.length - 1];
+    const maxP = series.reduce((a, b) => b.y > a.y ? b : a, series[0]);
+    const labelPoints = [last];
+    if (maxP !== last && maxP !== series[0] && maxP.y > last.y * 1.05) labelPoints.push(maxP);
+    labelPoints.forEach(p => {
+      svg.appendChild(el('circle', { cx: sx(p.x), cy: sy(p.y), r: 3.5, fill: '#0a0e0a' }));
+      const tx = sx(p.x), ty = sy(p.y) - 10;
+      const bgW = (formatShort(p.y).length * 7) + 12;
+      svg.appendChild(el('rect', {
+        x: tx - bgW/2, y: ty - 12, width: bgW, height: 16,
+        fill: '#0a0e0a'
+      }));
+      const t = el('text', { x: tx, y: ty, 'text-anchor': 'middle',
+                             'font-family': 'JetBrains Mono, monospace',
+                             'font-size': 10, 'font-weight': 700, fill: '#f4f1e8' });
+      t.appendChild(document.createTextNode(formatShort(p.y)));
+      svg.appendChild(t);
+    });
 
     // x ticks
     const tickStep = Math.max(1, Math.round((xmax - xmin) / 6));
@@ -1671,6 +1889,22 @@ const AIService = (() => {
     if (cashPct > 25) lines.push(`<em>เงินสดสูงไป</em> — แนะนำโยกเข้าหุ้น/พันธบัตรเพื่อสู้เงินเฟ้อ`);
     if (invPct < 30)  lines.push(`<em>เงินลงทุนน้อย</em> — ขั้นต่ำ 30% (DCA หุ้นโลก/ETF ทุกเดือน)`);
     if (otherPct > 60) lines.push(`<em>สินทรัพย์ไม่สภาพคล่อง (บ้าน/รถ) เยอะ</em> — รักษากองทุนฉุกเฉินให้ครบ 6 เดือนก่อน`);
+
+    // breakdown-aware advice (only when user filled it in)
+    const sum = INVEST_BREAKDOWN_FIELDS.reduce((a, f) => a + state[f.key], 0);
+    if (sum > 0) {
+      const norm = k => (state[k] / sum) * 100;
+      const stocks = norm('invStocks') + norm('invFunds');  // หุ้น+กองทุน นับเป็น equity
+      const bonds  = norm('invBonds');
+      const gold   = norm('invGold');
+      const crypto = norm('invCrypto');
+      lines.push(`<strong>พอร์ตการลงทุนของคุณ:</strong> หุ้น+กองทุน ${stocks.toFixed(0)}% / ตราสารหนี้ ${bonds.toFixed(0)}% / ทอง ${gold.toFixed(0)}% / คริปโต ${crypto.toFixed(0)}%`);
+      if (stocks > 80)  lines.push(`<em>เน้นหุ้นเยอะ</em> — เพิ่มตราสารหนี้ 10-20% ช่วยลดความผันผวน`);
+      if (crypto > 10)  lines.push(`<em>คริปโตสูง</em> — แนะนำไม่เกิน 5-10% ของพอร์ตเพราะผันผวนสูง`);
+      if (bonds  > 50)  lines.push(`<em>ตราสารหนี้เยอะ</em> — ถ้าอายุยังน้อย เพิ่มหุ้น/กองทุนเพื่อโอกาสเติบโตในระยะยาว`);
+      if (stocks < 30 && bonds < 30) lines.push(`<em>พอร์ตกระจัดกระจาย</em> — โฟกัสที่ Core (หุ้น+ตราสารหนี้) 70%+`);
+    }
+
     if (lines.length === 1) lines.push(`พอร์ตสมดุลดี · ทำต่อเนื่อง + rebalance ปีละครั้ง`);
     return lines.join('<br>');
   }
@@ -1904,11 +2138,25 @@ const UIController = (() => {
     if (total <= 0) {
       userData = [{ label: 'รอข้อมูล', pct: 100, color: '#8a8674' }];
     } else {
+      const breakdownSum = INVEST_BREAKDOWN_FIELDS.reduce((a, f) => a + state[f.key], 0);
       userData = [
-        { label: 'เงินสด/ฝาก',    pct: (state.cash  / total) * 100, color: '#d49b3f' },
-        { label: 'ลงทุน',         pct: (state.invest/ total) * 100, color: '#2d4a2b' },
-        { label: 'อื่นๆ (บ้าน/รถ)', pct: (state.other / total) * 100, color: '#c1502e' }
+        { label: 'เงินสด/ฝาก',    pct: (state.cash  / total) * 100, color: '#d49b3f' }
       ];
+      if (breakdownSum > 0 && state.invest > 0) {
+        const investPctOfTotal = (state.invest / total) * 100;
+        INVEST_BREAKDOWN_FIELDS.forEach(f => {
+          if (state[f.key] > 0) {
+            userData.push({
+              label: f.label,
+              pct: investPctOfTotal * (state[f.key] / breakdownSum),
+              color: f.color
+            });
+          }
+        });
+      } else {
+        userData.push({ label: 'ลงทุน', pct: (state.invest / total) * 100, color: '#2d4a2b' });
+      }
+      userData.push({ label: 'อื่นๆ (บ้าน/รถ)', pct: (state.other / total) * 100, color: '#c1502e' });
     }
     ChartService.doughnut('doughnutUser', userData, { centerLabel: 'คุณ', centerValue: total > 0 ? ChartService.formatShort(total) : '—' });
     ChartService.legend('doughnutUserLegend', userData);
@@ -2025,6 +2273,26 @@ const UIController = (() => {
         update();
       });
     });
+
+    // investment breakdown toggle
+    const breakdownBox = $('investBreakdown');
+    $('investBreakdownToggle').addEventListener('click', () => {
+      breakdownBox.classList.toggle('open');
+    });
+    INVEST_BREAKDOWN_FIELDS.forEach(f => {
+      const el = $(f.key);
+      el.addEventListener('input', () => {
+        state[f.key] = Math.max(0, Math.min(100, parseFloat(el.value) || 0));
+        updateInvestSum();
+        update();
+      });
+    });
+    function updateInvestSum() {
+      const sum = INVEST_BREAKDOWN_FIELDS.reduce((a, f) => a + state[f.key], 0);
+      const el = $('investSum');
+      el.textContent = `รวม: ${sum.toFixed(0)}%` + (sum > 0 && Math.abs(sum - 100) > 1 ? '  ·  (ไม่ตรง 100% ก็ใช้ได้)' : '');
+      el.classList.toggle('warn', sum > 105);
+    }
 
     // tabs
     document.querySelectorAll('.tab').forEach(tab => {
